@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Générateur de QR codes : texte, URL, WiFi, email, SMS, téléphone, vCard, géolocalisation."
+    />
+    <title>Générateur de QR code</title>
+    <script>
+      // Applique le thème AVANT le rendu pour éviter le "flash" de thème clair.
+      // Doit rester cohérent avec src/hooks/useTheme.ts (clé localStorage "theme").
+      (function () {
+        try {
+          var stored = localStorage.getItem('theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (stored === 'dark' || (stored === null && prefersDark)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {
+          /* localStorage indisponible : on ignore. */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

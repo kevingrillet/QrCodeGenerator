@@ -58,7 +58,12 @@
         try {
           var root = document.documentElement;
           var name = localStorage.getItem('theme-name');
-          if (name === 'default' || name === 'atelier' || name === 'blueprint' || name === 'aurora') {
+          if (
+            name === 'default' ||
+            name === 'atelier' ||
+            name === 'blueprint' ||
+            name === 'aurora'
+          ) {
             root.dataset.theme = name;
           }
           var mode = localStorage.getItem('theme');

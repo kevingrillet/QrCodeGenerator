@@ -104,7 +104,8 @@ const fr: Messages = {
     downloadSvg: 'Télécharger SVG',
     copy: "Copier l'image",
     copied: 'Copié !',
-    copyHint: 'Copie non disponible sur ce navigateur : faites un clic droit sur le QR puis « Copier l’image ».',
+    copyHint:
+      'Copie non disponible sur ce navigateur : faites un clic droit sur le QR puis « Copier l’image ».',
     error: 'Erreur de génération',
     alt: 'QR code généré',
     foregroundColor: 'Couleur du QR code',

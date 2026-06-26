@@ -98,57 +98,57 @@ function AppContent() {
           <TypeSelector types={PAYLOAD_TYPES} activeId={activeId} onChange={setActiveId} />
 
           <div className="mt-6 grid gap-8 md:grid-cols-[1fr_300px]">
-          {/* Colonne gauche : configuration */}
-          <div className="space-y-3">
-            <Section title={t('sections.content')} badge={1} defaultOpen>
-              <QrForm type={activeType} values={values} onChange={handleChange} errors={errors} />
-            </Section>
+            {/* Colonne gauche : configuration */}
+            <div className="space-y-3">
+              <Section title={t('sections.content')} badge={1} defaultOpen>
+                <QrForm type={activeType} values={values} onChange={handleChange} errors={errors} />
+              </Section>
 
-            <h2 className="px-1 pb-1 pt-4 text-xs font-bold uppercase tracking-wider text-fg-muted">
-              {t('sections.customization')}
-            </h2>
+              <h2 className="px-1 pb-1 pt-4 text-xs font-bold uppercase tracking-wider text-fg-muted">
+                {t('sections.customization')}
+              </h2>
 
-            <Section title={t('sections.color')} badge={2} headingLevel={3} defaultOpen>
-              <ColorControls colors={colors} onChange={setColors} />
-            </Section>
+              <Section title={t('sections.color')} badge={2} headingLevel={3} defaultOpen>
+                <ColorControls colors={colors} onChange={setColors} />
+              </Section>
 
-            <Section title={t('sections.shape')} badge={3} headingLevel={3}>
-              <ShapeControls shape={shape} onChange={setShape} />
-            </Section>
+              <Section title={t('sections.shape')} badge={3} headingLevel={3}>
+                <ShapeControls shape={shape} onChange={setShape} />
+              </Section>
 
-            <Section title={t('sections.logo')} badge={4} headingLevel={3}>
-              <LogoControls logo={logo} onChange={handleLogoChange} />
-            </Section>
+              <Section title={t('sections.logo')} badge={4} headingLevel={3}>
+                <LogoControls logo={logo} onChange={handleLogoChange} />
+              </Section>
 
-            <Section title={t('sections.output')} badge={5}>
-              <QrOutputControls
-                ecLevel={ecLevel}
-                onEcLevelChange={setEcLevel}
-                density={density}
-                onDensityChange={setDensity}
-                size={size}
-                onSizeChange={setSize}
-              />
-            </Section>
-          </div>
-
-          {/* Colonne droite : aperçu + export */}
-          <aside>
-            <div className="md:sticky md:top-6">
-              <QrPreview
-                text={payload}
-                ready={ready}
-                filenameBase={`qrcode-${activeId}`}
-                description={t(activeType.labelKey)}
-                colors={colors}
-                shape={shape}
-                ecLevel={ecLevel}
-                density={density}
-                size={size}
-                image={logo}
-              />
+              <Section title={t('sections.output')} badge={5}>
+                <QrOutputControls
+                  ecLevel={ecLevel}
+                  onEcLevelChange={setEcLevel}
+                  density={density}
+                  onDensityChange={setDensity}
+                  size={size}
+                  onSizeChange={setSize}
+                />
+              </Section>
             </div>
-          </aside>
+
+            {/* Colonne droite : aperçu + export */}
+            <aside>
+              <div className="md:sticky md:top-6">
+                <QrPreview
+                  text={payload}
+                  ready={ready}
+                  filenameBase={`qrcode-${activeId}`}
+                  description={t(activeType.labelKey)}
+                  colors={colors}
+                  shape={shape}
+                  ecLevel={ecLevel}
+                  density={density}
+                  size={size}
+                  image={logo}
+                />
+              </div>
+            </aside>
           </div>
         </main>
 

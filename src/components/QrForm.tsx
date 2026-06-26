@@ -105,47 +105,47 @@ function FieldControl({
 export function QrForm({ type, values, onChange, errors = {} }: QrFormProps) {
   const { t } = useI18n();
   const fields = type.fields.map((field) => {
-        const id = `field-${field.name}`;
-        const errorId = `${id}-error`;
-        const value = values[field.name] ?? (field.type === 'checkbox' ? false : '');
-        const errorKey = errors[field.name];
+    const id = `field-${field.name}`;
+    const errorId = `${id}-error`;
+    const value = values[field.name] ?? (field.type === 'checkbox' ? false : '');
+    const errorKey = errors[field.name];
 
-        // Les cases à cocher s'affichent en ligne (case + libellé à droite).
-        if (field.type === 'checkbox') {
-          return (
-            <div key={field.name} className="flex items-center gap-2">
-              <FieldControl field={field} value={value} onChange={(v) => onChange(field.name, v)} />
-              <label htmlFor={id} className="text-sm text-fg">
-                {t(field.labelKey)}
-              </label>
-            </div>
-          );
-        }
+    // Les cases à cocher s'affichent en ligne (case + libellé à droite).
+    if (field.type === 'checkbox') {
+      return (
+        <div key={field.name} className="flex items-center gap-2">
+          <FieldControl field={field} value={value} onChange={(v) => onChange(field.name, v)} />
+          <label htmlFor={id} className="text-sm text-fg">
+            {t(field.labelKey)}
+          </label>
+        </div>
+      );
+    }
 
-        return (
-          <div key={field.name} className="space-y-1">
-            <label htmlFor={id} className="block text-sm font-medium text-fg">
-              {t(field.labelKey)}
-              {field.required && (
-                <span aria-hidden="true" className="ml-0.5 text-danger">
-                  *
-                </span>
-              )}
-            </label>
-            <FieldControl
-              field={field}
-              value={value}
-              onChange={(v) => onChange(field.name, v)}
-              invalid={Boolean(errorKey)}
-              describedBy={errorKey ? errorId : undefined}
-            />
-            {errorKey && (
-              <p id={errorId} role="alert" className="text-sm text-danger">
-                {t(errorKey)}
-              </p>
-            )}
-          </div>
-        );
+    return (
+      <div key={field.name} className="space-y-1">
+        <label htmlFor={id} className="block text-sm font-medium text-fg">
+          {t(field.labelKey)}
+          {field.required && (
+            <span aria-hidden="true" className="ml-0.5 text-danger">
+              *
+            </span>
+          )}
+        </label>
+        <FieldControl
+          field={field}
+          value={value}
+          onChange={(v) => onChange(field.name, v)}
+          invalid={Boolean(errorKey)}
+          describedBy={errorKey ? errorId : undefined}
+        />
+        {errorKey && (
+          <p id={errorId} role="alert" className="text-sm text-danger">
+            {t(errorKey)}
+          </p>
+        )}
+      </div>
+    );
   });
 
   // Les types à plusieurs champs forment un ensemble cohérent : on les regroupe

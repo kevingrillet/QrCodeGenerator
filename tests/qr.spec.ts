@@ -20,7 +20,10 @@ test.describe('Générateur de QR code', () => {
   test('affiche le titre et le type Texte par défaut', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Générateur de QR code' })).toBeVisible();
-    await expect(page.getByRole('radio', { name: 'Texte' })).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByRole('radio', { name: 'Texte' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
   });
 
   test('génère un QR après saisie de texte', async ({ page }) => {

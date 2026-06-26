@@ -1,24 +1,70 @@
 <!doctype html>
-<!-- data-theme par défaut ; le thème réel (VITE_THEME) est appliqué par main.tsx. -->
+<!-- data-theme par défaut ; l'identité réelle + le mode clair/sombre sont
+     appliqués par le script anti-flash ci-dessous, puis gérés par useTheme. -->
 <html lang="fr" data-theme="default">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Générateur de QR code</title>
     <meta
       name="description"
-      content="Générateur de QR codes : texte, URL, WiFi, email, SMS, téléphone, vCard, géolocalisation."
+      content="Générateur de QR codes : texte, URL, WiFi, email, SMS, téléphone, vCard, géolocalisation. Personnalisation (couleurs, formes, logo), export PNG/SVG, 100 % dans le navigateur."
     />
-    <title>Générateur de QR code</title>
+    <meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#030712" media="(prefers-color-scheme: dark)" />
+
+    <!-- PWA : installable + fonctionnement hors-ligne (voir public/manifest.webmanifest). -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+
+    <!-- Open Graph (aperçu lors d'un partage de lien). URL absolues : les crawlers
+         n'exécutent pas le `base` relatif. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Générateur de QR code" />
+    <meta property="og:title" content="Générateur de QR code" />
+    <meta
+      property="og:description"
+      content="Générez des QR codes (texte, URL, WiFi, email, vCard…) avec couleurs, formes et logo. Export PNG/SVG, 100 % dans le navigateur."
+    />
+    <meta property="og:url" content="https://kevingrillet.github.io/QrCodeGenerator/" />
+    <meta
+      property="og:image"
+      content="https://kevingrillet.github.io/QrCodeGenerator/og-image.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Générateur de QR code" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:locale:alternate" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Générateur de QR code" />
+    <meta
+      name="twitter:description"
+      content="Générez des QR codes (texte, URL, WiFi, email, vCard…) avec couleurs, formes et logo. Export PNG/SVG, 100 % dans le navigateur."
+    />
+    <meta
+      name="twitter:image"
+      content="https://kevingrillet.github.io/QrCodeGenerator/og-image.png"
+    />
+
     <script>
-      // Applique le thème AVANT le rendu pour éviter le "flash" de thème clair.
-      // Doit rester cohérent avec src/hooks/useTheme.ts (clé localStorage "theme").
+      // Applique le thème AVANT le rendu pour éviter le « flash » (FOUC).
+      // Doit rester cohérent avec src/theme.ts + src/hooks/useTheme.ts
+      // (clés localStorage "theme-name" pour l'identité, "theme" pour le mode).
       (function () {
         try {
-          var stored = localStorage.getItem('theme');
+          var root = document.documentElement;
+          var name = localStorage.getItem('theme-name');
+          if (name === 'default' || name === 'atelier' || name === 'blueprint' || name === 'aurora') {
+            root.dataset.theme = name;
+          }
+          var mode = localStorage.getItem('theme');
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (stored === 'dark' || (stored === null && prefersDark)) {
-            document.documentElement.classList.add('dark');
+          if (mode === 'dark' || (mode === null && prefersDark)) {
+            root.classList.add('dark');
           }
         } catch (e) {
           /* localStorage indisponible : on ignore. */

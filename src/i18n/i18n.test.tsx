@@ -30,8 +30,8 @@ describe('i18n - intégration dans App', () => {
 
     expect(screen.getByRole('heading', { name: 'QR code generator' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Download PNG' })).toBeInTheDocument();
-    // Les onglets sont aussi traduits (Texte → Text).
-    expect(screen.getByRole('tab', { name: 'Text' })).toBeInTheDocument();
+    // Les boutons de type sont aussi traduits (Texte → Text).
+    expect(screen.getByRole('radio', { name: 'Text' })).toBeInTheDocument();
     expect(screen.getByText(/Fill in the form/i)).toBeInTheDocument();
   });
 });

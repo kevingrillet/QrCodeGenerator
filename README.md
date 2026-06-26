@@ -10,8 +10,10 @@ modules, **logo au centre**, correction d'erreur, **densité** — version auto 
 taille d'export), **garde-fou de lisibilité** (contraste), export **PNG** / **SVG** et
 **copie dans le presse-papier**.
 
-Le **thème visuel** est choisi au build parmi quatre identités
-(`default`, `atelier`, `blueprint`, `aurora`) — voir [Thèmes](#thèmes).
+Le **thème visuel** se choisit **au runtime** (menu déroulant) parmi quatre identités
+(`default`, `atelier`, `blueprint`, `aurora`), chacune déclinée en variante **claire et
+sombre** — voir [Thèmes](#thèmes). L'application est également une **PWA** : installable et
+utilisable **hors-ligne**, avec un aperçu de partage de lien (**Open Graph**).
 
 > 🔗 **Démo** : `https://kevingrillet.github.io/QrCodeGenerator/`
 
@@ -124,7 +126,7 @@ couleurs choisies et avertit l'utilisateur si le QR risque d'être illisible.
 
 ### 3. Couche UI — React
 
-- `TypeSelector` : onglets générés depuis le registre.
+- `TypeSelector` : sélection du type (motif ARIA `radiogroup`, navigation clavier) générée depuis le registre.
 - `QrForm` : formulaire **dynamique** rendu d'après `type.fields`, avec validation par champ.
 - `Section` : carte dépliable (accordéon) accessible structurant Contenu / Personnalisation.
 - `QrCustomizer` : contrôles de **couleur** (palettes + pickers) et de **forme**.
@@ -132,7 +134,8 @@ couleurs choisies et avertit l'utilisateur si le QR risque d'être illisible.
 - `QrOutputControls` : **correction d'erreur**, **densité** (version auto ou forcée) et
   **taille** d'export — chacune avec une bulle d'aide (`Hint`).
 - `QrPreview` : aperçu `<canvas>`, badge de lisibilité et téléchargements (PNG / SVG / copie).
-- `ThemeToggle` + `useTheme` : mode clair/sombre (thème `default` uniquement).
+- `ThemeSelector` + `ThemeToggle` + `useTheme` : choix de l'**identité visuelle** (menu) et
+  du **mode clair/sombre** au runtime, deux axes indépendants persistés.
 - `App` : assemble le tout et conserve les valeurs **par type** + le style du QR.
 
 ### Internationalisation (fr / en)
@@ -162,30 +165,50 @@ variables. Les composants n'utilisent **que** ces tokens.
 
 | Thème       | Identité                                  |
 | ----------- | ----------------------------------------- |
-| `default`   | Clair (indigo), **avec mode sombre**      |
+| `default`   | Indigo, neutre                            |
 | `atelier`   | Neutres chauds + terracotta               |
 | `blueprint` | Monospace, bordures franches, vert signal |
-| `aurora`    | Sombre, verre dépoli, accent violet       |
+| `aurora`    | Verre dépoli, accent violet               |
 
-Le thème est **choisi au build** (et non par un sélecteur à l'exécution) via la variable
-d'environnement `VITE_THEME`, appliquée en `data-theme` sur `<html>` (voir `src/theme.ts`) :
+Le thème se compose de **deux axes indépendants**, tous deux **choisis au runtime** et
+persistés en `localStorage` (anti-flash via un script dans `index.html`) :
 
-```bash
-npm run dev                      # thème "default"
-VITE_THEME=atelier npm run dev   # aperçu d'un thème en dev
-VITE_THEME=aurora  npm run build # build de production avec le thème "aurora"
-```
+- l'**identité** (`ThemeSelector` → menu déroulant → `data-theme` sur `<html>`, clé
+  `theme-name`) ;
+- le **mode clair / sombre** (`ThemeToggle` → classe `dark` sur `<html>`, clé `theme`).
 
-Le **mode clair / sombre** (`useTheme` → classe `dark` sur `<html>`, persistée en
-`localStorage`, anti-flash via un script dans `index.html`) n'agit que sur le thème
-`default` ; les autres ont une identité fixe et masquent le bouton de bascule.
+Chaque identité décline une **variante claire et une sombre** : les **huit combinaisons** sont
+valides. Les valeurs vivent dans `src/index.css` (`[data-theme='x']` et `[data-theme='x'].dark`),
+exposées à Tailwind via `@theme inline` — `inline` fait que les utilitaires (`bg-surface`,
+`text-fg`, `bg-accent`…) **référencent** les variables plutôt que d'en copier la valeur, ce qui
+permet de changer d'identité **et** de mode au runtime sans rebuild. La logique de
+sélection/application vit dans `src/theme.ts` + `src/hooks/useTheme.ts`.
 
-Dans **Storybook**, deux sélecteurs de la barre d'outils permettent de prévisualiser les
-quatre thèmes (`data-theme`) et le mode clair/sombre — voir `.storybook/preview.tsx`.
+Dans **Storybook**, deux menus **indépendants** de la barre d'outils — **« Thème »**
+(`data-theme`) et **« Mode »** (classe `dark`) — pilotent l'aperçu (voir
+`.storybook/preview.tsx`). La page **Design → Thèmes** affiche un échantillon de tokens pour
+comparer les identités d'un coup d'œil, et **Design → Couleurs** documente l'ensemble des
+tokens sémantiques (surfaces, accent, états) ainsi que les **6 palettes de couleur du QR**.
 
 > 💡 Le **fond** du QR reste clair par défaut pour garantir sa lisibilité par les scanners,
 > quel que soit le thème de l'interface ; un garde-fou de contraste prévient les choix
 > risqués.
+
+### PWA (installable / hors-ligne)
+
+Le site est une **Progressive Web App**, sans dépendance ni plugin de build :
+
+- `public/manifest.webmanifest` (+ icône _maskable_ et `apple-touch-icon.png` 180×180 pour
+  iOS) déclare l'app installable ;
+- `public/sw.js` est un **service worker** qui met l'app shell en cache (stratégie
+  _stale-while-revalidate_) : après la première visite, le générateur **fonctionne hors-ligne**.
+  Il n'est enregistré qu'en production (voir `src/main.tsx`) et ses chemins sont relatifs, donc
+  compatibles avec le sous-chemin GitHub Pages.
+
+### Partage de lien (SEO)
+
+`index.html` embarque les balises **Open Graph** et **Twitter Card** ainsi qu'une image
+d'aperçu `public/og-image.png` (1200×630, source vectorielle `public/og-image.svg`).
 
 ---
 
@@ -218,11 +241,11 @@ Le déploiement est **automatisé** par `.github/workflows/deploy.yml`.
 > 💡 `vite.config.ts` utilise `base: './'` : les chemins des assets sont **relatifs**, donc
 > le site fonctionne quel que soit le nom du dépôt — pas besoin de configurer le sous-chemin.
 
-> 🎨 Pour publier avec un autre thème, définissez `VITE_THEME` à l'étape de build du
-> workflow (ex. `env: { VITE_THEME: aurora }` sur le step `npm run build`).
+> 🎨 Plus besoin de configurer le thème au déploiement : chaque visiteur choisit l'identité
+> et le mode clair/sombre directement dans l'interface (préférences mémorisées localement).
 
 ---
 
 ## Licence
 
-[GNU General Public License v3.0 ou ultérieure](./LICENSE.md).
+[GNU General Public License v3.0 ou ultérieure](./LICENSE).

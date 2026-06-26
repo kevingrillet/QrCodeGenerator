@@ -18,6 +18,7 @@ import { ColorControls, ShapeControls } from './components/QrCustomizer';
 import { LogoControls } from './components/LogoControls';
 import { QrOutputControls } from './components/QrOutputControls';
 import { ThemeToggle } from './components/ThemeToggle';
+import { ThemeSelector } from './components/ThemeSelector';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { useTheme } from './hooks/useTheme';
 import { I18nProvider, useI18n } from './i18n/I18nProvider';
@@ -29,7 +30,6 @@ import {
   type FieldValues,
 } from './lib/payloads';
 import type { ErrorCorrectionLevel, ModuleShape, QrColors } from './lib/qr';
-import { ACTIVE_THEME, themeSupportsDarkMode } from './theme';
 
 /** Construit l'état initial : les valeurs par défaut de chaque type. */
 function buildInitialValues(): Record<string, FieldValues> {
@@ -38,7 +38,7 @@ function buildInitialValues(): Record<string, FieldValues> {
 
 function AppContent() {
   const { t } = useI18n();
-  const { theme, toggleTheme } = useTheme();
+  const { mode, toggleMode, themeName, setThemeName } = useTheme();
   const [activeId, setActiveId] = useState<string>(PAYLOAD_TYPES[0].id);
   const [valuesByType, setValuesByType] = useState<Record<string, FieldValues>>(buildInitialValues);
 
@@ -76,22 +76,28 @@ function AppContent() {
   return (
     <div className="min-h-full bg-canvas font-base text-fg">
       <div className="mx-auto max-w-4xl px-4 py-8">
+        <a
+          href="#main"
+          className="sr-only rounded-control bg-accent px-4 py-2 text-accent-fg focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+        >
+          {t('a11y.skipToContent')}
+        </a>
         <header className="mb-8 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">{t('app.title')}</h1>
             <p className="text-sm text-fg-muted">{t(activeType.descriptionKey)}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <ThemeSelector value={themeName} onChange={setThemeName} />
             <LanguageSwitcher />
-            {themeSupportsDarkMode(ACTIVE_THEME) && (
-              <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            )}
+            <ThemeToggle theme={mode} onToggle={toggleMode} />
           </div>
         </header>
 
-        <TypeSelector types={PAYLOAD_TYPES} activeId={activeId} onChange={setActiveId} />
+        <main id="main">
+          <TypeSelector types={PAYLOAD_TYPES} activeId={activeId} onChange={setActiveId} />
 
-        <div className="mt-6 grid gap-8 md:grid-cols-[1fr_300px]">
+          <div className="mt-6 grid gap-8 md:grid-cols-[1fr_300px]">
           {/* Colonne gauche : configuration */}
           <div className="space-y-3">
             <Section title={t('sections.content')} badge={1} defaultOpen>
@@ -102,15 +108,15 @@ function AppContent() {
               {t('sections.customization')}
             </h2>
 
-            <Section title={t('sections.color')} badge={2} defaultOpen>
+            <Section title={t('sections.color')} badge={2} headingLevel={3} defaultOpen>
               <ColorControls colors={colors} onChange={setColors} />
             </Section>
 
-            <Section title={t('sections.shape')} badge={3}>
+            <Section title={t('sections.shape')} badge={3} headingLevel={3}>
               <ShapeControls shape={shape} onChange={setShape} />
             </Section>
 
-            <Section title={t('sections.logo')} badge={4}>
+            <Section title={t('sections.logo')} badge={4} headingLevel={3}>
               <LogoControls logo={logo} onChange={handleLogoChange} />
             </Section>
 
@@ -133,6 +139,7 @@ function AppContent() {
                 text={payload}
                 ready={ready}
                 filenameBase={`qrcode-${activeId}`}
+                description={t(activeType.labelKey)}
                 colors={colors}
                 shape={shape}
                 ecLevel={ecLevel}
@@ -142,7 +149,8 @@ function AppContent() {
               />
             </div>
           </aside>
-        </div>
+          </div>
+        </main>
 
         <footer className="mt-12 text-center text-xs text-fg-muted">{t('app.privacy')}</footer>
       </div>

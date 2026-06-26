@@ -31,7 +31,7 @@ export function ColorControls({ colors, onChange }: ColorControlsProps) {
               onClick={() => onChange({ dark: preset.dark, light: preset.light })}
               className={`relative h-9 w-9 overflow-hidden rounded-control border transition ${
                 active
-                  ? 'border-accent ring-2 ring-accent ring-offset-1 ring-offset-surface'
+                  ? 'border-accent-strong ring-2 ring-accent-strong ring-offset-1 ring-offset-surface'
                   : 'border-line'
               }`}
             >

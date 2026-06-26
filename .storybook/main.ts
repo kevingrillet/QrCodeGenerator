@@ -6,7 +6,9 @@ import type { StorybookConfig } from '@storybook/react-vite';
  */
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.@(ts|tsx)'],
-  addons: ['@storybook/addon-themes', '@storybook/addon-docs'],
+  // Les thèmes sont gérés par des globals personnalisés dans preview.tsx (et non
+  // par `@storybook/addon-themes`, dont les deux décorateurs entraient en collision).
+  addons: ['@storybook/addon-docs'],
   framework: {
     name: '@storybook/react-vite',
     options: {},

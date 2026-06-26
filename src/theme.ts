@@ -1,34 +1,42 @@
 /**
- * Thème visuel de l'application.
+ * Système de thèmes de l'application.
  *
- * Le thème est choisi AU MOMENT DU BUILD (ou du `dev`) via la variable
- * d'environnement `VITE_THEME`, et non par un sélecteur à l'exécution :
+ * Depuis la 2.1.0, le thème se choisit AU RUNTIME (et non plus au build via
+ * `VITE_THEME`). Deux axes INDÉPENDANTS, tous deux persistés dans localStorage :
  *
- *   VITE_THEME=atelier npm run build
- *   VITE_THEME=aurora  npm run dev
+ *   1. l'identité visuelle (`ThemeName`) : default | atelier | blueprint | aurora,
+ *      appliquée en `data-theme` sur <html> ;
+ *   2. le mode clair/sombre (`Mode`) : light | dark, appliqué via la classe `dark`
+ *      sur <html> (variantes `dark:` de Tailwind).
  *
- * Les valeurs des tokens de chaque thème vivent dans `src/index.css`
- * (`[data-theme='…']`). Ici on ne gère que le choix et son application au DOM.
+ * Les quatre thèmes déclinent désormais une variante claire ET sombre : les huit
+ * combinaisons sont valides. Les valeurs des tokens vivent dans `src/index.css`
+ * (`[data-theme='…']` et `[data-theme='…'].dark`). Ce module ne gère que le choix
+ * et son application au DOM ; la persistance/réactivité vit dans `hooks/useTheme.ts`.
  */
 export const THEMES = ['default', 'atelier', 'blueprint', 'aurora'] as const;
 export type ThemeName = (typeof THEMES)[number];
 
+export type Mode = 'light' | 'dark';
+
 export const DEFAULT_THEME: ThemeName = 'default';
 
-/** Le mode clair/sombre n'a de sens que pour le thème `default`. */
-export function themeSupportsDarkMode(theme: ThemeName): boolean {
-  return theme === 'default';
-}
+/** Clé localStorage de l'identité visuelle. */
+export const THEME_STORAGE_KEY = 'theme-name';
+/** Clé localStorage du mode clair/sombre (conservée depuis la 1.0 pour l'anti-flash). */
+export const MODE_STORAGE_KEY = 'theme';
 
-/** Résout le thème demandé (valeur d'env) vers un thème valide. */
-export function resolveTheme(value: string | undefined): ThemeName {
+/** Résout une valeur quelconque vers un thème valide (sinon `default`). */
+export function resolveTheme(value: string | null | undefined): ThemeName {
   return (THEMES as readonly string[]).includes(value ?? '') ? (value as ThemeName) : DEFAULT_THEME;
 }
 
-/** Thème actif, figé au build depuis `import.meta.env.VITE_THEME`. */
-export const ACTIVE_THEME: ThemeName = resolveTheme(import.meta.env.VITE_THEME);
-
-/** Applique un thème au document (`data-theme` sur <html>). */
-export function applyTheme(theme: ThemeName): void {
+/** Applique l'identité visuelle au document (`data-theme` sur <html>). */
+export function applyThemeName(theme: ThemeName): void {
   document.documentElement.dataset.theme = theme;
+}
+
+/** Applique le mode clair/sombre au document (classe `dark` sur <html>). */
+export function applyMode(mode: Mode): void {
+  document.documentElement.classList.toggle('dark', mode === 'dark');
 }

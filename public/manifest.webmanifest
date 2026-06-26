@@ -1,0 +1,34 @@
+{
+  "name": "Générateur de QR code",
+  "short_name": "QR code",
+  "description": "Générez des QR codes (texte, URL, WiFi, email, vCard…) avec couleurs, formes et logo. Export PNG/SVG, 100 % dans le navigateur.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f9fafb",
+  "theme_color": "#f9fafb",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

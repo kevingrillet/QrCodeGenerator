@@ -40,6 +40,10 @@ export interface QrPreviewProps {
   size: number;
   /** Logo (data URL) à incruster au centre, ou chaîne vide. */
   image?: string;
+  /** Libellé du type de contenu (ex. « WiFi »), ajouté au nom accessible du QR.
+   *  On décrit le TYPE plutôt que la valeur encodée pour ne pas divulguer de
+   *  donnée sensible (mot de passe WiFi…) à la synthèse vocale. */
+  description?: string;
 }
 
 const PREVIEW_WIDTH = 240;
@@ -54,11 +58,14 @@ export function QrPreview({
   density,
   size,
   image,
+  description,
 }: QrPreviewProps) {
   const { t } = useI18n();
+  const qrLabel = description ? `${t('preview.alt')} : ${description}` : t('preview.alt');
   const containerRef = useRef<HTMLDivElement>(null);
   const qrRef = useRef<QRCodeStyling | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const [encodeError, setEncodeError] = useState(false);
 
   const { dark, light } = colors;
@@ -100,21 +107,36 @@ export function QrPreview({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text, ready, dark, light, shape, ecLevel, density, image]);
 
+  const flashCopyError = () => {
+    setCopyError(true);
+    window.setTimeout(() => setCopyError(false), 3000);
+  };
+
   const handleCopy = () => {
     const canvas = containerRef.current?.querySelector('canvas');
-    if (!canvas) return;
-    canvas.toBlob((blob) => {
-      if (!blob || !navigator.clipboard?.write) return;
-      void navigator.clipboard
-        .write([new ClipboardItem({ 'image/png': blob })])
-        .then(() => {
-          setCopied(true);
-          window.setTimeout(() => setCopied(false), 1500);
-        })
-        .catch(() => {
-          /* presse-papier indisponible : on ignore silencieusement. */
-        });
+    // Firefox < 127 et navigateurs anciens n'exposent pas ClipboardItem / write
+    // d'images : on bascule sur l'indication « clic droit » plutôt que d'échouer
+    // en silence.
+    if (!canvas || typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) {
+      flashCopyError();
+      return;
+    }
+    // Safari exige que le ClipboardItem soit construit SYNCHRONEMENT dans le
+    // gestionnaire de clic (préservation du « user gesture ») : on lui passe une
+    // *promesse* de blob plutôt que d'attendre le callback de toBlob.
+    const blob = new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (result) => (result ? resolve(result) : reject(new Error('toBlob a renvoyé null'))),
+        'image/png',
+      );
     });
+    void navigator.clipboard
+      .write([new ClipboardItem({ 'image/png': blob })])
+      .then(() => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1500);
+      })
+      .catch(flashCopyError);
   };
 
   const canExport = ready && !encodeError;
@@ -125,16 +147,24 @@ export function QrPreview({
         <div
           ref={containerRef}
           data-testid="qr-canvas"
+          role="img"
+          aria-label={qrLabel}
           className={ready && !encodeError ? '' : 'hidden'}
         />
         {!ready && <p className="px-4 text-center text-sm text-fg-muted">{t('preview.prompt')}</p>}
         {ready && encodeError && (
-          <p className="px-4 text-center text-sm text-red-500">{t('preview.error')}</p>
+          <p className="px-4 text-center text-sm text-danger">{t('preview.error')}</p>
         )}
       </div>
 
+      {/* Confirmation de copie annoncée aux lecteurs d'écran (le texte du bouton
+          change visuellement, mais ne serait pas annoncé sans région live). */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {copied ? t('preview.copied') : ''}
+      </p>
+
       {contrastWarning && (
-        <p role="alert" className="max-w-[256px] text-center text-sm text-amber-500">
+        <p role="alert" className="max-w-[256px] text-center text-sm text-warning">
           {contrastWarning}
         </p>
       )}
@@ -175,6 +205,12 @@ export function QrPreview({
           {copied ? t('preview.copied') : t('preview.copy')}
         </button>
       </div>
+
+      {copyError && (
+        <p role="alert" className="max-w-[256px] text-center text-xs text-fg-muted">
+          {t('preview.copyHint')}
+        </p>
+      )}
     </div>
   );
 }

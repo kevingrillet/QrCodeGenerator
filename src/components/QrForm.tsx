@@ -18,10 +18,10 @@ export interface QrFormProps {
 
 /** Classes communes aux champs texte/select pour rester cohérent. */
 const INPUT_CLASS =
-  'w-full rounded-control border bg-input px-3 py-2 text-fg shadow-card transition focus:border-accent focus:outline-hidden focus:ring-2 focus:ring-accent';
+  'w-full rounded-control border bg-input px-3 py-2 text-fg shadow-card transition focus:border-accent-strong focus:outline-hidden focus:ring-2 focus:ring-accent-strong';
 
-/** Classes ajoutées à un champ en erreur (bordure + anneau de focus rouges). */
-const INVALID_CLASS = 'border-red-500 focus:border-red-500 focus:ring-red-500';
+/** Classes ajoutées à un champ en erreur (bordure + anneau de focus). */
+const INVALID_CLASS = 'border-danger focus:border-danger focus:ring-danger';
 
 function FieldControl({
   field,
@@ -80,7 +80,7 @@ function FieldControl({
       <input
         id={id}
         type="checkbox"
-        className="h-5 w-5 rounded-sm border bg-input accent-accent focus:ring-accent"
+        className="h-5 w-5 rounded-sm border bg-input accent-accent focus:ring-accent-strong"
         checked={value === true}
         onChange={(event) => onChange(event.target.checked)}
         {...a11y}
@@ -104,9 +104,7 @@ function FieldControl({
 
 export function QrForm({ type, values, onChange, errors = {} }: QrFormProps) {
   const { t } = useI18n();
-  return (
-    <form className="space-y-4" onSubmit={(event) => event.preventDefault()}>
-      {type.fields.map((field) => {
+  const fields = type.fields.map((field) => {
         const id = `field-${field.name}`;
         const errorId = `${id}-error`;
         const value = values[field.name] ?? (field.type === 'checkbox' ? false : '');
@@ -129,7 +127,7 @@ export function QrForm({ type, values, onChange, errors = {} }: QrFormProps) {
             <label htmlFor={id} className="block text-sm font-medium text-fg">
               {t(field.labelKey)}
               {field.required && (
-                <span aria-hidden="true" className="ml-0.5 text-red-500">
+                <span aria-hidden="true" className="ml-0.5 text-danger">
                   *
                 </span>
               )}
@@ -142,13 +140,28 @@ export function QrForm({ type, values, onChange, errors = {} }: QrFormProps) {
               describedBy={errorKey ? errorId : undefined}
             />
             {errorKey && (
-              <p id={errorId} role="alert" className="text-sm text-red-600">
+              <p id={errorId} role="alert" className="text-sm text-danger">
                 {t(errorKey)}
               </p>
             )}
           </div>
         );
-      })}
+  });
+
+  // Les types à plusieurs champs forment un ensemble cohérent : on les regroupe
+  // dans un <fieldset> (RGAA 11.5). La <legend> est masquée visuellement (le type
+  // est déjà indiqué par l'onglet actif et le titre de section) mais reste
+  // annoncée par les lecteurs d'écran.
+  return (
+    <form className="space-y-4" onSubmit={(event) => event.preventDefault()}>
+      {type.fields.length > 1 ? (
+        <fieldset className="m-0 min-w-0 space-y-4 border-0 p-0">
+          <legend className="sr-only">{t(type.labelKey)}</legend>
+          {fields}
+        </fieldset>
+      ) : (
+        fields
+      )}
     </form>
   );
 }

@@ -5,6 +5,92 @@ Toutes les évolutions notables de ce projet sont consignées dans ce fichier.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et le projet suit le [versionnage sémantique](https://semver.org/lang/fr/).
 
+## [2.1.0] — 2026-06-26
+
+Thème choisi au runtime (et décliné clair/sombre pour les quatre identités),
+application installable hors-ligne (PWA), aperçu de partage (Open Graph) et
+plusieurs améliorations d'accessibilité.
+
+### Ajouté
+
+- **Choix du thème au runtime** via un menu déroulant dans l'en-tête (`ThemeSelector`),
+  en remplacement de la variable de build `VITE_THEME`. Le choix est persisté
+  (clé localStorage `theme-name`) et appliqué avant le rendu (anti-flash).
+- **Variantes claire ET sombre pour les quatre thèmes** (`default`, `atelier`,
+  `blueprint`, `aurora`) : les huit combinaisons identité × mode sont désormais
+  valides. La bascule clair/sombre est toujours disponible (auparavant limitée au
+  thème `default`).
+- **PWA** : `manifest.webmanifest` + icône maskable + `apple-touch-icon.png` (180×180,
+  pour iOS) + service worker (`public/sw.js`) sans dépendance. L'application est
+  **installable** et **fonctionne hors-ligne** après la première visite (app shell en
+  cache, stratégie « stale-while-revalidate »).
+- **Aperçu de partage de lien (SEO)** : balises **Open Graph** et **Twitter Card**,
+  `theme-color`, et une image d'aperçu `public/og-image.png` (1200×630).
+- **Image d'aperçu source** `public/og-image.svg` (versionnable).
+- **Storybook** : pages **Design / Thèmes** (aperçu des tokens, à combiner avec les
+  menus « Thème » et « Mode » de la barre d'outils) et **Design / Couleurs**
+  (référence des **tokens sémantiques** — surfaces, accent, états — et des **6
+  palettes de couleur du QR**) ; stories pour des briques jusque-là absentes :
+  `Section`, `Hint`, `QrCustomizer` (couleurs / formes), `LanguageSwitcher`,
+  `ThemeSelector`, `LogoControls` et `QrOutputControls`.
+
+### Modifié
+
+- **Sélecteur de type** (`TypeSelector`) : navigation clavier conforme au motif
+  ARIA « tabs » (flèches ←/→/↑/↓, Début/Fin, « roving tabindex ») et libellé du
+  `tablist` internationalisé.
+- **Bulle d'aide** (`Hint`) : le texte est relié au bouton « ? » par
+  `aria-describedby` (annoncé par les lecteurs d'écran) et la bulle se ferme avec
+  Échap (WCAG 1.4.13).
+
+### Accessibilité (audit RGAA)
+
+- **Repère `<main>`** + **lien d'évitement** « Aller au contenu » (RGAA 9.2, 12.7).
+- **Sélecteur de type** : passage du motif ARIA « tabs » (incomplet, sans panneaux)
+  au motif **`radiogroup` / `radio` + `aria-checked`**, plus fidèle à une sélection
+  unique (RGAA 7.1).
+- **Hiérarchie de titres** : les en-têtes de `Section` portent de vrais niveaux
+  (`h2`/`h3`) ; Couleur/Forme/Logo passent en `h3` sous « Personnalisation » (RGAA 9.1).
+- **Regroupement des champs** WiFi / vCard / Email / SMS / Géo dans un `<fieldset>`
+  avec `<legend>` (RGAA 11.5).
+- **Focus clavier** toujours perceptible : indicateur global basé sur `accent-strong`
+  (l'accent jaune de Blueprint était invisible sur blanc) ; idem pour l'anneau de
+  sélection des palettes (RGAA 10.7 / 3.3).
+- **Contrastes (RGAA 3.2/3.3)** : couleurs d'état tokenisées (`--color-danger` /
+  `--color-warning`, déclinées clair/sombre) en remplacement des `text-red/amber-*`
+  trop clairs ; ajustement de `fg-muted` et des accents là où le ratio AA (4.5:1)
+  n'était pas atteint. Les 8 combinaisons thème × mode respectent désormais AA pour
+  le texte et les indicateurs.
+- **Confirmation de copie** annoncée via une région `aria-live` ; **nom accessible
+  du QR** enrichi du type de contenu (sans divulguer les valeurs sensibles).
+- **Copie dans le presse-papier** rendue compatible Safari (construction
+  synchrone du `ClipboardItem` avec une promesse de blob) et **Firefox / anciens
+  navigateurs** (repli : message « clic droit → Copier l'image » au lieu d'un
+  échec silencieux).
+- **Système de thèmes** (`theme.ts`, `useTheme`) refondu autour de deux axes
+  indépendants (identité + mode), tous deux persistés.
+
+### Corrigé
+
+- L'aperçu du QR (`<canvas>`) n'avait pas de **nom accessible** : ajout de
+  `role="img"` + `aria-label` (clé i18n `preview.alt`, jusque-là inutilisée).
+- **Storybook — bascule clair/sombre inopérante** : les deux décorateurs de
+  `@storybook/addon-themes` (`withThemeByClassName` / `withThemeByDataAttribute`)
+  écrivaient dans le même global `theme` (collision : un seul menu actif) et ne
+  posaient pas forcément `data-theme` et `.dark` sur le même élément. Remplacés par
+  deux globals indépendants (« Thème » + « Mode ») appliqués au `<html>` de
+  l'iframe, comme `useTheme` en production.
+- **Liste déroulante du sélecteur de thème illisible** sur les thèmes « verre »
+  (aurora) : les `<option>` héritaient du fond translucide du `<select>` (texte
+  clair sur fond clair). Fond désormais opaque (`--color-canvas`).
+
+### Supprimé
+
+- Sélection du thème au build via `VITE_THEME` (et la déclaration de type associée
+  dans `vite-env.d.ts`), remplacée par le choix au runtime.
+- Dépendance de dev `@storybook/addon-themes`, devenue inutile (thèmes gérés par des
+  globals personnalisés dans `preview.tsx`).
+
 ## [2.0.0] — 2026-06-26
 
 Refonte de l'interface, personnalisation avancée du QR, système de thèmes et

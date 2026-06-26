@@ -21,6 +21,9 @@
   --color-accent-soft: var(--color-accent-soft);
   --color-accent-strong: var(--color-accent-strong);
 
+  --color-danger: var(--color-danger);
+  --color-warning: var(--color-warning);
+
   --default-border-width: var(--border-width);
 
   --radius-card: var(--radius-card);
@@ -48,19 +51,45 @@
   ::file-selector-button {
     border-color: var(--color-line);
   }
+
+  /* Indicateur de focus clavier homogène et toujours perceptible (RGAA 10.7 /
+     WCAG 2.4.7). On utilise `accent-strong` — fortement contrasté avec les
+     surfaces dans les 8 combinaisons — car `accent` est parfois trop clair (ex.
+     le jaune Blueprint, invisible sur blanc). `:where()` garde une spécificité
+     nulle : les contrôles avec un style de focus dédié peuvent le surcharger. */
+  :where(a, button, select, input, textarea, [role='radio'], [tabindex]):focus-visible {
+    outline: 2px solid var(--color-accent-strong);
+    outline-offset: 2px;
+  }
+}
+
+/* Couleurs d'état (danger / warning), communes et déclinées clair/sombre, avec un
+   contraste suffisant (≥ 4.5:1) sur les fonds : les Tailwind `text-red/amber-*`
+   en dur échouaient sur les thèmes clairs. */
+:root {
+  --color-danger: #b91c1c;
+  --color-warning: #92400e;
+}
+.dark {
+  --color-danger: #f87171;
+  --color-warning: #fbbf24;
 }
 
 /* ===========================================================================
    THÈMES — design tokens (variables CSS)
    ---------------------------------------------------------------------------
-   Un thème = un jeu de tokens. Le thème actif est choisi AU BUILD via la
-   variable d'environnement `VITE_THEME` (default | atelier | blueprint | aurora)
-   et appliqué en `data-theme` sur <html> (voir src/theme.ts + main.tsx).
+   Un thème = un jeu de tokens. Depuis la 2.1.0 le thème se choisit AU RUNTIME
+   (et non plus au build) : l'identité visuelle (default | atelier | blueprint |
+   aurora) est appliquée en `data-theme` sur <html> et le mode clair/sombre via
+   la classe `dark` (voir src/theme.ts + src/hooks/useTheme.ts).
 
-   Le mode clair/sombre (classe `dark`) n'agit que sur le thème `default` ; les
-   autres thèmes ont une identité visuelle fixe.
+   Chaque thème décline DEUX variantes : claire (`[data-theme='x']`) et sombre
+   (`[data-theme='x'].dark`). Les huit combinaisons sont valides. Les variantes
+   sombres ne redéfinissent que les couleurs ; forme/typo (radius, bordures,
+   ombres, police) restent celles de l'identité, héritées de la variante claire.
    =========================================================================== */
 
+/* --------------------------------- default -------------------------------- */
 :root,
 [data-theme='default'] {
   color-scheme: light;
@@ -69,7 +98,7 @@
   --color-input: #ffffff;
   --color-subtle: #f3f4f6;
   --color-fg: #111827;
-  --color-fg-muted: #6b7280;
+  --color-fg-muted: #5f6571;
   --color-line: #e5e7eb;
   --color-accent: #4f46e5;
   --color-accent-hover: #4338ca;
@@ -95,13 +124,14 @@
   --color-fg: #f3f4f6;
   --color-fg-muted: #9ca3af;
   --color-line: #374151;
-  --color-accent: #6366f1;
+  --color-accent: #5558e3;
   --color-accent-hover: #4f46e5;
   --color-accent-fg: #ffffff;
   --color-accent-soft: rgb(99 102 241 / 0.16);
   --color-accent-strong: #a5b4fc;
 }
 
+/* --------------------------------- atelier -------------------------------- */
 [data-theme='atelier'] {
   color-scheme: light;
   --color-canvas: #f7f6f3;
@@ -109,13 +139,13 @@
   --color-input: #ffffff;
   --color-subtle: #efece6;
   --color-fg: #211f1c;
-  --color-fg-muted: #8a8478;
+  --color-fg-muted: #6f6a60;
   --color-line: #e9e5dd;
-  --color-accent: #c2603e;
+  --color-accent: #b0532f;
   --color-accent-hover: #a94f30;
   --color-accent-fg: #ffffff;
   --color-accent-soft: #f6ece7;
-  --color-accent-strong: #b1532f;
+  --color-accent-strong: #9c4827;
 
   --radius-card: 1rem;
   --radius-control: 0.625rem;
@@ -126,6 +156,25 @@
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* Atelier sombre : neutres chauds profonds, accent terracotta légèrement éclairci. */
+[data-theme='atelier'].dark {
+  color-scheme: dark;
+  --color-canvas: #1b1916;
+  --color-surface: #262320;
+  --color-input: #2e2a26;
+  --color-subtle: #2e2a26;
+  --color-fg: #f1ece4;
+  --color-fg-muted: #a89e90;
+  --color-line: #3a352f;
+  --color-accent: #d2724f;
+  --color-accent-hover: #e0875f;
+  --color-accent-fg: #1b1916;
+  --color-accent-soft: rgb(210 114 79 / 0.18);
+  --color-accent-strong: #e3956f;
+  --shadow-card: 0 12px 30px -24px rgb(0 0 0 / 0.7);
+}
+
+/* -------------------------------- blueprint ------------------------------- */
 [data-theme='blueprint'] {
   color-scheme: light;
   --color-canvas: #f3f4ee;
@@ -150,7 +199,53 @@
     ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
 }
 
+/* Blueprint sombre : « plan » inversé — encre claire sur fond charbon, le décalage
+   brutaliste des ombres reprend la couleur des lignes (claires ici). */
+[data-theme='blueprint'].dark {
+  color-scheme: dark;
+  --color-canvas: #14150f;
+  --color-surface: #1c1d15;
+  --color-input: #1c1d15;
+  --color-subtle: #1c1d15;
+  --color-fg: #f3f4ee;
+  --color-fg-muted: #b6b8a6;
+  --color-line: #e9ead8;
+  --color-accent: #d7f24a;
+  --color-accent-hover: #c7e236;
+  --color-accent-fg: #14150f;
+  --color-accent-soft: rgb(215 242 74 / 0.16);
+  --color-accent-strong: #e3f56e;
+  --shadow-card: 4px 4px 0 #e9ead8;
+  --shadow-btn: 3px 3px 0 #e9ead8;
+}
+
+/* --------------------------------- aurora --------------------------------- */
+/* Aurora clair : variante diurne — surfaces translucides claires, accent violet. */
 [data-theme='aurora'] {
+  color-scheme: light;
+  --color-canvas: #f3f1fb;
+  --color-surface: rgb(255 255 255 / 0.72);
+  --color-input: rgb(255 255 255 / 0.85);
+  --color-subtle: rgb(123 108 255 / 0.08);
+  --color-fg: #211d3a;
+  --color-fg-muted: #595481;
+  --color-line: rgb(123 108 255 / 0.22);
+  --color-accent: #6a5bff;
+  --color-accent-hover: #5a4bef;
+  --color-accent-fg: #ffffff;
+  --color-accent-soft: rgb(123 108 255 / 0.12);
+  --color-accent-strong: #5141d6;
+
+  --radius-card: 1.125rem;
+  --radius-control: 0.7rem;
+  --border-width: 1px;
+  --shadow-card: 0 24px 50px -32px rgb(70 50 160 / 0.45);
+  --shadow-btn: none;
+  --font-base:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+[data-theme='aurora'].dark {
   color-scheme: dark;
   --color-canvas: #0c0b18;
   --color-surface: rgb(255 255 255 / 0.06);
@@ -160,22 +255,22 @@
   --color-fg-muted: #9b97c4;
   --color-line: rgb(255 255 255 / 0.14);
   --color-accent: #7b6cff;
-  --color-accent-hover: #6a5bff;
+  --color-accent-hover: #8d80ff;
   --color-accent-fg: #0c0b18;
   --color-accent-soft: rgb(123 108 255 / 0.16);
   --color-accent-strong: #b9b2ff;
-
-  --radius-card: 1.125rem;
-  --radius-control: 0.7rem;
-  --border-width: 1px;
   --shadow-card: 0 30px 60px -30px rgb(0 0 0 / 0.8);
-  --shadow-btn: none;
-  --font-base:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Halo d'ambiance pour le thème sombre Aurora. */
-[data-theme='aurora'] body {
+/* Halo d'ambiance Aurora — clair le jour, profond la nuit. */
+[data-theme='aurora']:not(.dark) body {
+  background-image:
+    radial-gradient(120% 120% at 12% -5%, rgb(123 108 255 / 0.16) 0%, transparent 45%),
+    radial-gradient(60% 50% at 92% 108%, rgb(86 222 196 / 0.16), transparent 70%);
+  background-attachment: fixed;
+}
+
+[data-theme='aurora'].dark body {
   background-image:
     radial-gradient(120% 120% at 12% -5%, #2a2350 0%, transparent 45%),
     radial-gradient(60% 50% at 92% 108%, rgb(86 222 196 / 0.18), transparent 70%);

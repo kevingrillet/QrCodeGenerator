@@ -20,21 +20,21 @@ test.describe('Générateur de QR code', () => {
   test('affiche le titre et le type Texte par défaut', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: 'Générateur de QR code' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Texte' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('radio', { name: 'Texte' })).toHaveAttribute('aria-checked', 'true');
   });
 
   test('génère un QR après saisie de texte', async ({ page }) => {
     await page.goto('/');
     // Au départ, aucun QR : message d'invite.
     await expect(page.getByText(/Remplissez le formulaire/i)).toBeVisible();
-    await page.getByLabel('Texte').fill('Bonjour Playwright');
+    await page.getByRole('textbox', { name: 'Texte' }).fill('Bonjour Playwright');
     // Le <canvas> du QR apparaît une fois le texte saisi et le rendu terminé.
     await expect(renderedQr(page)).toBeVisible();
   });
 
   test('génère un QR WiFi et permet le téléchargement PNG', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('tab', { name: 'WiFi' }).click();
+    await page.getByRole('radio', { name: 'WiFi' }).click();
     await page.getByLabel('Nom du réseau (SSID)').fill('MonReseau');
     await page.getByLabel('Mot de passe').fill('motdepasse');
     await expect(renderedQr(page)).toBeVisible();
@@ -45,13 +45,19 @@ test.describe('Générateur de QR code', () => {
     expect(download.suggestedFilename()).toBe('qrcode-wifi.png');
   });
 
-  test('bascule le thème clair/sombre', async ({ page }) => {
+  test('bascule le mode clair/sombre', async ({ page }) => {
     await page.goto('/');
     const html = page.locator('html');
     const wasDark = await html.evaluate((el) => el.classList.contains('dark'));
-    await page.getByRole('button', { name: /thème/i }).click();
+    await page.getByRole('button', { name: /activer le mode/i }).click();
     const isDark = await html.evaluate((el) => el.classList.contains('dark'));
     expect(isDark).toBe(!wasDark);
+  });
+
+  test("change d'identité visuelle au runtime", async ({ page }) => {
+    await page.goto('/');
+    await page.getByLabel('Thème').selectOption('aurora');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'aurora');
   });
 
   test('bascule la langue en anglais', async ({ page }) => {

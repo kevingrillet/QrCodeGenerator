@@ -12,7 +12,7 @@ describe('App', () => {
   it('affiche le titre et le type Texte par défaut', () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: 'Générateur de QR code' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Texte' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('radio', { name: 'Texte' })).toHaveAttribute('aria-checked', 'true');
   });
 
   it("invite à remplir le formulaire tant qu'aucune donnée n'est saisie", () => {
@@ -22,7 +22,7 @@ describe('App', () => {
 
   it('change de type quand on clique sur un autre onglet', async () => {
     render(<App />);
-    await userEvent.click(screen.getByRole('tab', { name: 'WiFi' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'WiFi' }));
     expect(screen.getByLabelText(/Nom du réseau \(SSID\)/)).toBeInTheDocument();
   });
 
@@ -30,5 +30,18 @@ describe('App', () => {
     render(<App />);
     expect(screen.getByRole('button', { name: 'Télécharger PNG' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Télécharger SVG' })).toBeDisabled();
+  });
+
+  it('bascule le mode sombre au runtime (classe `dark` sur <html>)', async () => {
+    render(<App />);
+    expect(document.documentElement).not.toHaveClass('dark');
+    await userEvent.click(screen.getByRole('button', { name: 'Activer le mode sombre' }));
+    expect(document.documentElement).toHaveClass('dark');
+  });
+
+  it("change d'identité visuelle au runtime (data-theme sur <html>)", async () => {
+    render(<App />);
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /thème/i }), 'aurora');
+    expect(document.documentElement.dataset.theme).toBe('aurora');
   });
 });

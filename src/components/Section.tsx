@@ -16,21 +16,34 @@ export interface SectionProps {
   badge?: ReactNode;
   /** Section ouverte par défaut ? */
   defaultOpen?: boolean;
+  /** Niveau du titre porté par l'en-tête (hiérarchie RGAA 9.1). Défaut : 2. */
+  headingLevel?: 2 | 3 | 4;
   children: ReactNode;
 }
 
-export function Section({ title, subtitle, badge, defaultOpen = false, children }: SectionProps) {
+export function Section({
+  title,
+  subtitle,
+  badge,
+  defaultOpen = false,
+  headingLevel = 2,
+  children,
+}: SectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   const panelId = useId();
+  // L'en-tête est un vrai titre (h2/h3/h4) contenant le bouton accordéon : le
+  // titre structure la page, le bouton porte l'interaction (aria-expanded).
+  const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
 
   return (
     // Pas d'`overflow-hidden` : les bulles d'aide (`Hint`) doivent pouvoir
     // dépasser de la carte. Les coins restent nets car le bouton d'en-tête est
     // arrondi pour épouser la carte (haut toujours, bas quand la section est repliée).
     <section className="rounded-card border bg-surface shadow-card">
-      <button
-        type="button"
-        aria-expanded={open}
+      <Heading className="m-0">
+        <button
+          type="button"
+          aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((value) => !value)}
         className={`flex w-full items-center gap-3 rounded-t-card px-4 py-3.5 text-left text-sm font-semibold text-fg transition hover:bg-subtle ${
@@ -58,7 +71,8 @@ export function Section({ title, subtitle, badge, defaultOpen = false, children 
             clipRule="evenodd"
           />
         </svg>
-      </button>
+        </button>
+      </Heading>
       {open && (
         <div id={panelId} className="px-4 pb-4 pt-1">
           {children}

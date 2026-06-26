@@ -13,8 +13,17 @@ export const LANGS: Lang[] = ['fr', 'en'];
 export interface Messages {
   app: { title: string; privacy: string };
   /** Libellés d'accessibilité réutilisables. */
-  a11y: { help: string };
-  theme: { toLight: string; toDark: string; light: string; dark: string };
+  a11y: { help: string; contentType: string; skipToContent: string };
+  theme: {
+    toLight: string;
+    toDark: string;
+    light: string;
+    dark: string;
+    /** Libellé du sélecteur d'identité visuelle. */
+    select: string;
+    /** Noms des identités visuelles (clé = default | atelier | blueprint | aurora). */
+    names: Record<string, string>;
+  };
   language: { label: string; toggle: string };
   preview: {
     prompt: string;
@@ -22,6 +31,7 @@ export interface Messages {
     downloadSvg: string;
     copy: string;
     copied: string;
+    copyHint: string;
     error: string;
     alt: string;
     foregroundColor: string;
@@ -73,12 +83,19 @@ const fr: Messages = {
     title: 'Générateur de QR code',
     privacy: "Généré localement dans votre navigateur — aucune donnée n'est envoyée à un serveur.",
   },
-  a11y: { help: 'Aide' },
+  a11y: { help: 'Aide', contentType: 'Type de contenu', skipToContent: 'Aller au contenu' },
   theme: {
-    toLight: 'Activer le thème clair',
-    toDark: 'Activer le thème sombre',
-    light: 'Thème clair',
-    dark: 'Thème sombre',
+    toLight: 'Activer le mode clair',
+    toDark: 'Activer le mode sombre',
+    light: 'Mode clair',
+    dark: 'Mode sombre',
+    select: 'Thème',
+    names: {
+      default: 'Défaut',
+      atelier: 'Atelier',
+      blueprint: 'Blueprint',
+      aurora: 'Aurora',
+    },
   },
   language: { label: 'Langue', toggle: 'Passer en anglais' },
   preview: {
@@ -87,6 +104,7 @@ const fr: Messages = {
     downloadSvg: 'Télécharger SVG',
     copy: "Copier l'image",
     copied: 'Copié !',
+    copyHint: 'Copie non disponible sur ce navigateur : faites un clic droit sur le QR puis « Copier l’image ».',
     error: 'Erreur de génération',
     alt: 'QR code généré',
     foregroundColor: 'Couleur du QR code',
@@ -206,12 +224,19 @@ const en: Messages = {
     title: 'QR code generator',
     privacy: 'Generated locally in your browser — no data is sent to any server.',
   },
-  a11y: { help: 'Help' },
+  a11y: { help: 'Help', contentType: 'Content type', skipToContent: 'Skip to content' },
   theme: {
-    toLight: 'Switch to light theme',
-    toDark: 'Switch to dark theme',
-    light: 'Light theme',
-    dark: 'Dark theme',
+    toLight: 'Switch to light mode',
+    toDark: 'Switch to dark mode',
+    light: 'Light mode',
+    dark: 'Dark mode',
+    select: 'Theme',
+    names: {
+      default: 'Default',
+      atelier: 'Atelier',
+      blueprint: 'Blueprint',
+      aurora: 'Aurora',
+    },
   },
   language: { label: 'Language', toggle: 'Switch to French' },
   preview: {
@@ -220,6 +245,7 @@ const en: Messages = {
     downloadSvg: 'Download SVG',
     copy: 'Copy image',
     copied: 'Copied!',
+    copyHint: 'Copy isn’t available in this browser: right-click the QR and choose “Copy image”.',
     error: 'Generation error',
     alt: 'Generated QR code',
     foregroundColor: 'QR code color',

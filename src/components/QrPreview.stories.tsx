@@ -1,6 +1,7 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { QrPreview } from './QrPreview';
 import { getPayloadType } from '../lib/payloads';
+import type { ModuleShape, QrColors } from '../lib/qr';
 import { useI18n } from '../i18n/I18nProvider';
 
 const meta: Meta<typeof QrPreview> = {
@@ -11,12 +12,48 @@ export default meta;
 
 type Story = StoryObj<typeof QrPreview>;
 
+/** Wrapper appliquant des réglages d'export fixes (les contrôles vivent ailleurs). */
+function PreviewHarness({
+  text,
+  ready,
+  colors = { dark: '#000000', light: '#ffffff' },
+  shape = 'square',
+}: {
+  text: string;
+  ready: boolean;
+  colors?: QrColors;
+  shape?: ModuleShape;
+}) {
+  return (
+    <QrPreview
+      text={text}
+      ready={ready}
+      colors={colors}
+      shape={shape}
+      ecLevel="M"
+      density={0}
+      size={512}
+    />
+  );
+}
+
 export const Url: Story = {
-  args: { text: 'https://exemple.com', ready: true },
+  render: () => <PreviewHarness text="https://exemple.com" ready />,
+};
+
+export const PointsColores: Story = {
+  render: () => (
+    <PreviewHarness
+      text="https://exemple.com"
+      ready
+      colors={{ dark: '#1d4ed8', light: '#ffffff' }}
+      shape="dots"
+    />
+  ),
 };
 
 export const PasPret: Story = {
-  args: { text: '', ready: false },
+  render: () => <PreviewHarness text="" ready={false} />,
 };
 
 /**
@@ -57,7 +94,7 @@ export const TousLesTypes: StoryObj = {
           return (
             <div key={id} className="flex flex-col items-center gap-2">
               <span className="text-sm font-medium">{t(type.labelKey)}</span>
-              <QrPreview text={type.build(values)} ready filenameBase={`qrcode-${id}`} />
+              <PreviewHarness text={type.build(values)} ready />
             </div>
           );
         })}

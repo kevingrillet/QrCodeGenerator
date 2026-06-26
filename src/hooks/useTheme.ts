@@ -27,7 +27,15 @@ export function getInitialTheme(): Theme {
 
 /** Applique le thème au document et le persiste. */
 function applyTheme(theme: Theme): void {
-  document.documentElement.classList.toggle('dark', theme === 'dark');
+  const root = document.documentElement;
+  // On coupe les transitions le temps de la bascule pour que fond, cartes et
+  // boutons changent de couleur en même temps (sinon effet de désynchronisation),
+  // puis on les réactive une fois le nouveau thème peint (double rAF).
+  root.classList.add('theme-switching');
+  root.classList.toggle('dark', theme === 'dark');
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => root.classList.remove('theme-switching'));
+  });
   try {
     window.localStorage.setItem(STORAGE_KEY, theme);
   } catch {

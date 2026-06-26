@@ -7,7 +7,7 @@ import { buildSms } from './sms';
 import { buildTel } from './tel';
 import { buildVCard, escapeVCard } from './vcard';
 import { buildGeo } from './geo';
-import { PAYLOAD_TYPES, getPayloadType, isReady } from './index';
+import { PAYLOAD_TYPES, getPayloadType, isReady, getErrors } from './index';
 
 describe('buildText', () => {
   it('retourne le texte tel quel', () => {
@@ -167,6 +167,55 @@ describe('registre', () => {
     it('est vrai quand tous les champs requis sont renseignés', () => {
       const wifi = getPayloadType('wifi');
       expect(isReady(wifi, { ...wifi.defaults, ssid: 'X' })).toBe(true);
+    });
+  });
+
+  describe('getErrors', () => {
+    it('ne renvoie aucune erreur pour un champ vide (rôle de isReady)', () => {
+      expect(getErrors(getPayloadType('url'), { url: '' })).toEqual({});
+      expect(getErrors(getPayloadType('email'), { to: '' })).toEqual({});
+      expect(getErrors(getPayloadType('geo'), { latitude: '', longitude: '' })).toEqual({});
+    });
+
+    it('ne renvoie aucune erreur pour les types sans validation', () => {
+      expect(getErrors(getPayloadType('text'), { text: 'coucou' })).toEqual({});
+    });
+
+    describe('url', () => {
+      const url = getPayloadType('url');
+      it('accepte une adresse sans schéma', () => {
+        expect(getErrors(url, { url: 'exemple.com' })).toEqual({});
+      });
+      it('rejette une saisie qui n’est pas une URL', () => {
+        expect(getErrors(url, { url: 'pas une url' })).toEqual({ url: 'validation.url' });
+      });
+    });
+
+    describe('email', () => {
+      const email = getPayloadType('email');
+      it('accepte une adresse valide', () => {
+        expect(getErrors(email, { to: 'a@b.com' })).toEqual({});
+      });
+      it('rejette une adresse sans domaine', () => {
+        expect(getErrors(email, { to: 'a@b' })).toEqual({ to: 'validation.email' });
+      });
+    });
+
+    describe('geo', () => {
+      const geo = getPayloadType('geo');
+      it('accepte des coordonnées dans les bornes', () => {
+        expect(getErrors(geo, { latitude: '48.85', longitude: '2.29' })).toEqual({});
+      });
+      it('rejette une latitude hors limites', () => {
+        expect(getErrors(geo, { latitude: '120', longitude: '2.29' })).toEqual({
+          latitude: 'validation.latitude',
+        });
+      });
+      it('rejette une longitude non numérique', () => {
+        expect(getErrors(geo, { latitude: '48.85', longitude: 'abc' })).toEqual({
+          longitude: 'validation.longitude',
+        });
+      });
     });
   });
 });

@@ -19,7 +19,7 @@ export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
       onClick={onToggle}
       aria-label={isDark ? t('theme.toLight') : t('theme.toDark')}
       title={isDark ? t('theme.light') : t('theme.dark')}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 bg-white text-xl text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-control border bg-surface text-xl text-fg transition hover:bg-subtle"
     >
       <span aria-hidden="true">{isDark ? '☀️' : '🌙'}</span>
     </button>

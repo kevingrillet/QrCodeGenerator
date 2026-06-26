@@ -29,10 +29,10 @@ export function TypeSelector({ types, activeId, onChange }: TypeSelectorProps) {
               // min-w uniforme + texte centré et insécable : les onglets gardent une
               // largeur stable d'une langue à l'autre, tout en tenant sur une seule
               // ligne (la rangée ne déborde pas de la largeur du conteneur).
-              'min-w-[5rem] whitespace-nowrap rounded-lg px-3 py-1.5 text-center text-sm font-medium transition ' +
+              'min-w-20 whitespace-nowrap rounded-control border px-3 py-1.5 text-center text-sm font-medium transition ' +
               (isActive
-                ? 'bg-indigo-600 text-white shadow'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700')
+                ? 'border-accent bg-accent text-accent-fg shadow-btn'
+                : 'bg-subtle text-fg-muted hover:text-fg')
             }
           >
             {t(type.labelKey)}

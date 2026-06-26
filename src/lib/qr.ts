@@ -1,15 +1,31 @@
 /**
- * Adaptateur autour de la librairie `qrcode` (pattern Adapter).
+ * Adaptateur autour de la librairie `qr-code-styling` (pattern Adapter).
  *
  * Tout le reste de l'application passe par ce module pour générer/télécharger un QR.
- * Si l'on voulait un jour changer de moteur d'encodage, seul ce fichier serait à
- * modifier. On expose un rendu canvas (aperçu + export PNG) et un rendu SVG (export
- * vectoriel), plus des utilitaires de téléchargement côté navigateur.
+ * `qr-code-styling` permet, en plus des couleurs, de styliser la FORME des modules
+ * (carré, points, arrondi) et d'exporter en PNG (canvas) ou SVG.
+ *
+ * On expose :
+ *  - `toStylingOptions` : transforme NOS options en options de la lib (fonction pure,
+ *    testable sans DOM) ;
+ *  - `createQr` : crée une instance prête à être `append`/`update` dans le DOM ;
+ *  - `downloadQr` : exporte le QR dans un fichier (PNG/SVG) à la taille voulue.
+ *
+ * L'aperçu à l'écran est rendu en `<canvas>` (type par défaut) afin que le clic
+ * droit « Copier l'image » du navigateur reste disponible.
  */
-import QRCode from 'qrcode';
+import QRCodeStyling, {
+  type Options,
+  type DotType,
+  type CornerSquareType,
+  type TypeNumber,
+} from 'qr-code-styling';
 
 /** Niveau de correction d'erreur (plus haut = plus robuste mais plus dense). */
 export type ErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';
+
+/** Forme des modules proposée dans l'UI (vocabulaire métier, indépendant de la lib). */
+export type ModuleShape = 'square' | 'dots' | 'rounded';
 
 export interface QrColors {
   /** Couleur des modules (premier plan). */
@@ -20,84 +36,86 @@ export interface QrColors {
 
 export interface QrRenderOptions {
   errorCorrectionLevel?: ErrorCorrectionLevel;
-  /** Marge (quiet zone) en nombre de modules. */
+  /** Marge (quiet zone) en pixels. */
   margin?: number;
-  /** Largeur du rendu en pixels (canvas/PNG). */
+  /** Largeur/hauteur du rendu en pixels. */
   width?: number;
   colors?: QrColors;
+  /** Forme des modules. */
+  shape?: ModuleShape;
+  /**
+   * Densité = version du QR (1 à 40, soit 21×21 à 177×177 modules).
+   * `0` (défaut) = automatique : la plus petite version qui contient les données
+   * au niveau de correction choisi (table de capacité standard ISO/IEC 18004).
+   */
+  typeNumber?: number;
+  /**
+   * Logo à incruster au centre (data URL ou URL d'image). Masque une partie des
+   * modules : prévoir un niveau de correction élevé (Q/H) pour rester scannable.
+   */
+  image?: string;
 }
 
-/** Valeurs par défaut, fusionnées avec les options fournies. */
-function toLibOptions(options: QrRenderOptions = {}): QRCode.QRCodeToDataURLOptions {
+const DEFAULT_DARK = '#000000';
+const DEFAULT_LIGHT = '#ffffff';
+
+/** Correspondance forme métier → type de module `qr-code-styling`. */
+const SHAPE_TO_DOTS: Record<ModuleShape, DotType> = {
+  square: 'square',
+  dots: 'dots',
+  rounded: 'extra-rounded',
+};
+
+/** Correspondance forme métier → type des « yeux » (carrés de positionnement). */
+const SHAPE_TO_CORNERS: Record<ModuleShape, CornerSquareType> = {
+  square: 'square',
+  dots: 'dot',
+  rounded: 'extra-rounded',
+};
+
+/**
+ * Transforme nos options en options `qr-code-styling`. Fonction PURE (aucun accès
+ * DOM) : c'est le cœur testable de l'adaptateur.
+ */
+export function toStylingOptions(text: string, options: QrRenderOptions = {}): Options {
+  const size = options.width ?? 256;
+  const dark = options.colors?.dark ?? DEFAULT_DARK;
+  const light = options.colors?.light ?? DEFAULT_LIGHT;
+  const shape = options.shape ?? 'square';
   return {
-    errorCorrectionLevel: options.errorCorrectionLevel ?? 'M',
-    margin: options.margin ?? 2,
-    width: options.width ?? 256,
-    color: {
-      dark: options.colors?.dark ?? '#000000',
-      light: options.colors?.light ?? '#ffffff',
+    type: 'canvas',
+    width: size,
+    height: size,
+    margin: options.margin ?? 8,
+    data: text,
+    image: options.image,
+    imageOptions: { imageSize: 0.35, margin: 4, hideBackgroundDots: true },
+    qrOptions: {
+      errorCorrectionLevel: options.errorCorrectionLevel ?? 'M',
+      typeNumber: (options.typeNumber ?? 0) as TypeNumber,
     },
+    dotsOptions: { type: SHAPE_TO_DOTS[shape], color: dark },
+    cornersSquareOptions: { type: SHAPE_TO_CORNERS[shape], color: dark },
+    cornersDotOptions: { color: dark },
+    backgroundOptions: { color: light },
   };
 }
 
-/** Dessine le QR dans un élément <canvas> existant (utilisé pour l'aperçu). */
-export async function renderToCanvas(
-  canvas: HTMLCanvasElement,
+/** Crée une instance prête à `append(container)` puis `update(...)` pour l'aperçu. */
+export function createQr(text: string, options?: QrRenderOptions): QRCodeStyling {
+  return new QRCodeStyling(toStylingOptions(text, options));
+}
+
+/**
+ * Exporte le QR dans un fichier. `extension` détermine le format ; la même
+ * instance sait produire un PNG (canvas) ou un SVG.
+ */
+export async function downloadQr(
   text: string,
+  filename: string,
+  extension: 'png' | 'svg',
   options?: QrRenderOptions,
 ): Promise<void> {
-  await QRCode.toCanvas(canvas, text, toLibOptions(options));
-}
-
-/** Produit le QR sous forme de chaîne SVG (export vectoriel). */
-export async function renderToSvgString(text: string, options?: QrRenderOptions): Promise<string> {
-  const libOptions = toLibOptions(options);
-  return QRCode.toString(text, {
-    type: 'svg',
-    errorCorrectionLevel: libOptions.errorCorrectionLevel,
-    margin: libOptions.margin,
-    width: libOptions.width,
-    color: libOptions.color,
-  });
-}
-
-/** Produit le QR sous forme de Data URL PNG. */
-export async function toPngDataUrl(text: string, options?: QrRenderOptions): Promise<string> {
-  return QRCode.toDataURL(text, toLibOptions(options));
-}
-
-/** Déclenche le téléchargement d'un fichier à partir d'une URL (data: ou blob:). */
-function triggerDownload(href: string, filename: string): void {
-  const link = document.createElement('a');
-  link.href = href;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-/** Télécharge le QR au format PNG. */
-export async function downloadPng(
-  text: string,
-  filename = 'qrcode.png',
-  options?: QrRenderOptions,
-): Promise<void> {
-  const dataUrl = await toPngDataUrl(text, options);
-  triggerDownload(dataUrl, filename);
-}
-
-/** Télécharge le QR au format SVG. */
-export async function downloadSvg(
-  text: string,
-  filename = 'qrcode.svg',
-  options?: QrRenderOptions,
-): Promise<void> {
-  const svg = await renderToSvgString(text, options);
-  const blob = new Blob([svg], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  try {
-    triggerDownload(url, filename);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  const qr = createQr(text, options);
+  await qr.download({ name: filename, extension });
 }

@@ -13,7 +13,7 @@
  * Les `build` ci-dessous sont de fins adaptateurs : ils lisent les valeurs
  * (génériques) du formulaire et délèguent aux builders fortement typés.
  */
-import type { PayloadType, FieldValues } from './types';
+import type { PayloadType, FieldValues, FieldErrors } from './types';
 import { readString, readBoolean } from './types';
 import { buildText } from './text';
 import { buildUrl } from './url';
@@ -23,6 +23,46 @@ import { buildSms } from './sms';
 import { buildTel } from './tel';
 import { buildVCard } from './vcard';
 import { buildGeo } from './geo';
+
+/* -------------------------------------------------------------------------- */
+/* Validateurs de format (clés i18n sous `validation.*`).                      */
+/* Convention : un champ vide ne produit jamais d'erreur (géré par `isReady`). */
+/* -------------------------------------------------------------------------- */
+
+/** Format email volontairement permissif : `qqch@qqch.tld`. */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Vérifie qu'une chaîne est un nombre fini compris dans [min, max]. */
+function isNumberInRange(raw: string, min: number, max: number): boolean {
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= min && n <= max;
+}
+
+function validateUrlFields(values: FieldValues): FieldErrors {
+  const raw = readString(values, 'url').trim();
+  if (raw === '') return {};
+  try {
+    const url = new URL(buildUrl(raw));
+    return url.hostname ? {} : { url: 'validation.url' };
+  } catch {
+    return { url: 'validation.url' };
+  }
+}
+
+function validateEmailFields(values: FieldValues): FieldErrors {
+  const to = readString(values, 'to').trim();
+  if (to === '') return {};
+  return EMAIL_REGEX.test(to) ? {} : { to: 'validation.email' };
+}
+
+function validateGeoFields(values: FieldValues): FieldErrors {
+  const errors: FieldErrors = {};
+  const lat = readString(values, 'latitude').trim();
+  const lng = readString(values, 'longitude').trim();
+  if (lat !== '' && !isNumberInRange(lat, -90, 90)) errors.latitude = 'validation.latitude';
+  if (lng !== '' && !isNumberInRange(lng, -180, 180)) errors.longitude = 'validation.longitude';
+  return errors;
+}
 
 export const PAYLOAD_TYPES: PayloadType[] = [
   {
@@ -56,6 +96,7 @@ export const PAYLOAD_TYPES: PayloadType[] = [
     ],
     defaults: { url: '' },
     build: (v) => buildUrl(readString(v, 'url')),
+    validate: validateUrlFields,
   },
   {
     id: 'wifi',
@@ -107,6 +148,7 @@ export const PAYLOAD_TYPES: PayloadType[] = [
         subject: readString(v, 'subject'),
         body: readString(v, 'body'),
       }),
+    validate: validateEmailFields,
   },
   {
     id: 'sms',
@@ -204,6 +246,7 @@ export const PAYLOAD_TYPES: PayloadType[] = [
         latitude: readString(v, 'latitude'),
         longitude: readString(v, 'longitude'),
       }),
+    validate: validateGeoFields,
   },
 ];
 
@@ -227,6 +270,14 @@ export function isReady(type: PayloadType, values: FieldValues): boolean {
   return type.fields
     .filter((field) => field.required)
     .every((field) => readString(values, field.name).trim() !== '');
+}
+
+/**
+ * Retourne les erreurs de *format* des valeurs saisies (clés i18n par champ).
+ * Objet vide si le type ne définit pas de validation ou si tout est valide.
+ */
+export function getErrors(type: PayloadType, values: FieldValues): FieldErrors {
+  return type.validate?.(values) ?? {};
 }
 
 export * from './types';

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 /**
  * Tests d'intégration end-to-end (navigateur réel via Playwright).
@@ -6,6 +6,16 @@ import { test, expect } from '@playwright/test';
  * téléchargement. Le serveur de prévisualisation est lancé automatiquement
  * (voir playwright.config.ts).
  */
+
+/**
+ * Le QR est dessiné de façon ASYNCHRONE par `qr-code-styling` : il ajoute un
+ * `<canvas>` dans le conteneur `qr-canvas` une fois l'image prête. On attend donc
+ * ce `<canvas>` enfant, et pas seulement le conteneur (qui existe avant le rendu).
+ */
+function renderedQr(page: Page) {
+  return page.locator('[data-testid="qr-canvas"] canvas');
+}
+
 test.describe('Générateur de QR code', () => {
   test('affiche le titre et le type Texte par défaut', async ({ page }) => {
     await page.goto('/');
@@ -18,8 +28,8 @@ test.describe('Générateur de QR code', () => {
     // Au départ, aucun QR : message d'invite.
     await expect(page.getByText(/Remplissez le formulaire/i)).toBeVisible();
     await page.getByLabel('Texte').fill('Bonjour Playwright');
-    // Le canvas du QR apparaît une fois le texte saisi.
-    await expect(page.getByTestId('qr-canvas')).toBeVisible();
+    // Le <canvas> du QR apparaît une fois le texte saisi et le rendu terminé.
+    await expect(renderedQr(page)).toBeVisible();
   });
 
   test('génère un QR WiFi et permet le téléchargement PNG', async ({ page }) => {
@@ -27,7 +37,7 @@ test.describe('Générateur de QR code', () => {
     await page.getByRole('tab', { name: 'WiFi' }).click();
     await page.getByLabel('Nom du réseau (SSID)').fill('MonReseau');
     await page.getByLabel('Mot de passe').fill('motdepasse');
-    await expect(page.getByTestId('qr-canvas')).toBeVisible();
+    await expect(renderedQr(page)).toBeVisible();
 
     const downloadPromise = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Télécharger PNG' }).click();

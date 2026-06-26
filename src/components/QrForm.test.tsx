@@ -29,4 +29,18 @@ describe('QrForm', () => {
     await userEvent.click(screen.getByLabelText('Réseau masqué'));
     expect(onChange).toHaveBeenCalledWith('hidden', true);
   });
+
+  it('affiche le message d’erreur et marque le champ invalide', () => {
+    const url = getPayloadType('url');
+    render(
+      <QrForm
+        type={url}
+        values={{ url: 'pas une url' }}
+        onChange={() => {}}
+        errors={{ url: 'validation.url' }}
+      />,
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Adresse web invalide.');
+    expect(screen.getByLabelText(/Adresse/)).toHaveAttribute('aria-invalid', 'true');
+  });
 });

@@ -13,7 +13,7 @@ import { LANGS, type Lang } from '../i18n/messages';
 /** Drapeau français (3 bandes verticales). */
 function FlagFR() {
   return (
-    <svg viewBox="0 0 3 2" aria-hidden="true" className="h-4 w-6 rounded-sm shadow-sm">
+    <svg viewBox="0 0 3 2" aria-hidden="true" className="h-4 w-6 rounded-xs shadow-xs">
       <rect width="1" height="2" x="0" fill="#0055A4" />
       <rect width="1" height="2" x="1" fill="#ffffff" />
       <rect width="1" height="2" x="2" fill="#EF4135" />
@@ -24,7 +24,7 @@ function FlagFR() {
 /** Drapeau britannique (Union Jack, version compacte). */
 function FlagGB() {
   return (
-    <svg viewBox="0 0 60 30" aria-hidden="true" className="h-4 w-6 rounded-sm shadow-sm">
+    <svg viewBox="0 0 60 30" aria-hidden="true" className="h-4 w-6 rounded-xs shadow-xs">
       <clipPath id="lang-gb-clip">
         <path d="M0,0 v30 h60 v-30 z" />
       </clipPath>
@@ -64,7 +64,7 @@ export function LanguageSwitcher() {
       onClick={() => setLang(otherLang)}
       aria-label={t('language.toggle')}
       title={t('language.toggle')}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-300 bg-white transition hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-control border bg-surface transition hover:bg-subtle"
     >
       <Flag />
     </button>

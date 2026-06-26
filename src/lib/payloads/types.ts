@@ -57,6 +57,12 @@ export interface FieldDef {
  */
 export type FieldValues = Record<string, string | boolean>;
 
+/**
+ * Erreurs de validation : nom de champ → clé i18n du message d'erreur.
+ * Un objet vide signifie « aucune erreur ».
+ */
+export type FieldErrors = Record<string, string>;
+
 /** Définition complète d'un type de contenu QR (entrée du registre). */
 export interface PayloadType {
   /** Identifiant stable (utilisé dans l'URL/état). */
@@ -71,6 +77,12 @@ export interface PayloadType {
   defaults: FieldValues;
   /** Construit la chaîne à encoder à partir des valeurs du formulaire. */
   build: (values: FieldValues) => string;
+  /**
+   * Validation optionnelle du *format* des valeurs saisies. Ne contrôle PAS la
+   * présence des champs requis (rôle de `isReady`) : un champ vide ne doit jamais
+   * produire d'erreur ici. Retourne les erreurs par champ (objet vide si tout va bien).
+   */
+  validate?: (values: FieldValues) => FieldErrors;
 }
 
 /** Récupère une valeur texte depuis l'objet de valeurs (sécurisé). */

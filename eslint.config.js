@@ -6,7 +6,7 @@ import storybook from 'eslint-plugin-storybook';
 import tseslint from 'typescript-eslint';
 
 /**
- * Configuration ESLint (flat config, ESLint 9).
+ * Configuration ESLint (flat config, ESLint 10).
  * Couvre le code applicatif TypeScript/React et les stories Storybook.
  */
 export default tseslint.config(

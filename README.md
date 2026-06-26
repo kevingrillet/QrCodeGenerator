@@ -5,7 +5,13 @@ donnée n'est envoyée à un serveur. Conçu pour être hébergé gratuitement s
 Pages**.
 
 Types de contenu supportés : **Texte, URL, WiFi, Email, SMS, Téléphone, vCard, Géo**.
-Interface **bilingue (fr / en)**, thème **clair / sombre**, export **PNG** et **SVG**.
+Interface **bilingue (fr / en)**, **personnalisation** du QR (couleurs + palettes, forme des
+modules, **logo au centre**, correction d'erreur, **densité** — version auto ou forcée —,
+taille d'export), **garde-fou de lisibilité** (contraste), export **PNG** / **SVG** et
+**copie dans le presse-papier**.
+
+Le **thème visuel** est choisi au build parmi quatre identités
+(`default`, `atelier`, `blueprint`, `aurora`) — voir [Thèmes](#thèmes).
 
 > 🔗 **Démo** : `https://kevingrillet.github.io/QrCodeGenerator/`
 
@@ -13,20 +19,20 @@ Interface **bilingue (fr / en)**, thème **clair / sombre**, export **PNG** et *
 
 ## Stack
 
-| Rôle                         | Outil                                                                           |
-| ---------------------------- | ------------------------------------------------------------------------------- |
-| Build / dev                  | [Vite](https://vitejs.dev/)                                                     |
-| UI                           | [React](https://react.dev/) + TypeScript                                        |
-| Style                        | [Tailwind CSS](https://tailwindcss.com/) (`darkMode: 'class'`)                  |
-| Encodage QR                  | [`qrcode`](https://www.npmjs.com/package/qrcode) — **seule dépendance runtime** |
-| Tests unitaires / composants | [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) |
-| Tests d'intégration / e2e    | [Playwright](https://playwright.dev/)                                           |
-| Documentation des composants | [Storybook](https://storybook.js.org/)                                          |
-| Qualité                      | ESLint + Prettier                                                               |
-| CI/CD                        | GitHub Actions                                                                  |
+| Rôle                         | Outil                                                                                             |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- |
+| Build / dev                  | [Vite](https://vitejs.dev/)                                                                       |
+| UI                           | [React](https://react.dev/) + TypeScript                                                          |
+| Style                        | [Tailwind CSS](https://tailwindcss.com/) v4 (config CSS-first, `@theme inline`)                   |
+| Encodage QR                  | [`qr-code-styling`](https://www.npmjs.com/package/qr-code-styling) — **seule dépendance runtime** |
+| Tests unitaires / composants | [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/)                   |
+| Tests d'intégration / e2e    | [Playwright](https://playwright.dev/)                                                             |
+| Documentation des composants | [Storybook](https://storybook.js.org/)                                                            |
+| Qualité                      | ESLint + Prettier                                                                                 |
+| CI/CD                        | GitHub Actions                                                                                    |
 
-Les dépendances _runtime_ sont volontairement minimales : `react`, `react-dom`, `qrcode`.
-Tout le reste est en `devDependencies`.
+Les dépendances _runtime_ sont volontairement minimales : `react`, `react-dom`,
+`qr-code-styling`. Tout le reste est en `devDependencies`.
 
 ---
 
@@ -51,7 +57,6 @@ npm run preview    # http://localhost:4173
 | Script                    | Rôle                                                              |
 | ------------------------- | ----------------------------------------------------------------- |
 | `npm run dev`             | Serveur de développement (rebuild + recharge à chaque sauvegarde) |
-| `npm run watch`           | Alias de `dev` (même serveur, rebuild auto au save)               |
 | `npm run build`           | Build de production (`tsc -b` + `vite build`)                     |
 | `npm run preview`         | Prévisualise le build de production                               |
 | `npm test`                | Tests unitaires / composants (Vitest)                             |
@@ -106,17 +111,29 @@ registre, sans toucher aux composants.
 
 ### 2. Couche `qr` — l'adaptateur d'encodage (pattern _Adapter_)
 
-`src/lib/qr.ts` encapsule la librairie `qrcode`. C'est le **seul** endroit qui en dépend :
-il expose le rendu canvas (aperçu + PNG) et SVG, plus les utilitaires de téléchargement.
-Changer de moteur d'encodage ne toucherait que ce fichier.
+`src/lib/qr.ts` encapsule la librairie `qr-code-styling`. C'est le **seul** endroit qui en
+dépend : il expose `toStylingOptions` (transformation **pure** de nos options vers celles de
+la lib, testée unitairement), `createQr` (instance à `append`/`update` pour l'aperçu) et
+`downloadQr` (export PNG / SVG). C'est ici que vivent les couleurs, la **forme des modules**
+(carré / points / arrondi), le niveau de correction et la taille. Changer de moteur ne
+toucherait que ce fichier. L'aperçu est rendu en `<canvas>` — le clic droit « Copier
+l'image » du navigateur reste donc disponible.
+
+Le module `src/lib/contrast.ts` (pur, testé) calcule le ratio de contraste WCAG entre les
+couleurs choisies et avertit l'utilisateur si le QR risque d'être illisible.
 
 ### 3. Couche UI — React
 
 - `TypeSelector` : onglets générés depuis le registre.
-- `QrForm` : formulaire **dynamique** rendu d'après `type.fields`.
-- `QrPreview` : dessine le QR dans un `<canvas>` et propose les exports PNG / SVG.
-- `ThemeToggle` + `useTheme` : thème clair/sombre.
-- `App` : assemble le tout et conserve les valeurs **par type**.
+- `QrForm` : formulaire **dynamique** rendu d'après `type.fields`, avec validation par champ.
+- `Section` : carte dépliable (accordéon) accessible structurant Contenu / Personnalisation.
+- `QrCustomizer` : contrôles de **couleur** (palettes + pickers) et de **forme**.
+- `LogoControls` : import d'un **logo** (image → data URL) incrusté au centre.
+- `QrOutputControls` : **correction d'erreur**, **densité** (version auto ou forcée) et
+  **taille** d'export — chacune avec une bulle d'aide (`Hint`).
+- `QrPreview` : aperçu `<canvas>`, badge de lisibilité et téléchargements (PNG / SVG / copie).
+- `ThemeToggle` + `useTheme` : mode clair/sombre (thème `default` uniquement).
+- `App` : assemble le tout et conserve les valeurs **par type** + le style du QR.
 
 ### Internationalisation (fr / en)
 
@@ -133,20 +150,51 @@ Point de conception : le **registre des payloads ne contient aucune chaîne trad
 seulement des **clés** (`labelKey`, `descriptionKey`, `placeholderKey`). Les textes vivent
 uniquement dans les dictionnaires, ce qui garde la logique métier indépendante de la langue.
 
-### Thème clair / sombre
+### Thèmes
 
-`useTheme` lit la préférence dans `localStorage` (clé `theme`), sinon suit le système
-(`prefers-color-scheme`), et applique la classe `dark` sur `<html>` (variantes `dark:` de
-Tailwind). Un court script dans `index.html` applique le thème **avant** le rendu pour
-éviter tout « flash ». Le QR lui-même reste noir sur blanc pour garantir sa lisibilité par
-les scanners.
+Quatre **identités visuelles** sont disponibles, chacune décrite par un jeu de **design
+tokens** (variables CSS : couleurs, rayons, ombres, épaisseur de bordure, police) dans
+`src/index.css`. Un bloc `@theme inline` (Tailwind v4) expose ces variables sous forme de
+couleurs sémantiques (`bg-surface`, `text-fg`, `bg-accent`, `border-line`…) : `inline` fait
+que les utilitaires **référencent** les variables plutôt que d'en copier la valeur — ce qui
+permet de changer de thème (et de mode clair/sombre) au runtime en ne touchant qu'aux
+variables. Les composants n'utilisent **que** ces tokens.
+
+| Thème       | Identité                                  |
+| ----------- | ----------------------------------------- |
+| `default`   | Clair (indigo), **avec mode sombre**      |
+| `atelier`   | Neutres chauds + terracotta               |
+| `blueprint` | Monospace, bordures franches, vert signal |
+| `aurora`    | Sombre, verre dépoli, accent violet       |
+
+Le thème est **choisi au build** (et non par un sélecteur à l'exécution) via la variable
+d'environnement `VITE_THEME`, appliquée en `data-theme` sur `<html>` (voir `src/theme.ts`) :
+
+```bash
+npm run dev                      # thème "default"
+VITE_THEME=atelier npm run dev   # aperçu d'un thème en dev
+VITE_THEME=aurora  npm run build # build de production avec le thème "aurora"
+```
+
+Le **mode clair / sombre** (`useTheme` → classe `dark` sur `<html>`, persistée en
+`localStorage`, anti-flash via un script dans `index.html`) n'agit que sur le thème
+`default` ; les autres ont une identité fixe et masquent le bouton de bascule.
+
+Dans **Storybook**, deux sélecteurs de la barre d'outils permettent de prévisualiser les
+quatre thèmes (`data-theme`) et le mode clair/sombre — voir `.storybook/preview.tsx`.
+
+> 💡 Le **fond** du QR reste clair par défaut pour garantir sa lisibilité par les scanners,
+> quel que soit le thème de l'interface ; un garde-fou de contraste prévient les choix
+> risqués.
 
 ---
 
 ## Tests
 
-- **Unitaires / composants** (`npm test`) : tous les builders de payloads (cas nominaux +
-  échappement), le rendu SVG, et les composants (`TypeSelector`, `QrForm`, `App`).
+- **Unitaires / composants** (`npm test`) : les builders de payloads (cas nominaux +
+  échappement), la **validation** (URL / email / géo), le **contraste**, le mapping
+  d'options `qr` (`toStylingOptions`), et les composants (`TypeSelector`, `QrForm`,
+  `QrCustomizer`, `App`).
 - **Intégration / e2e** (`npm run test:e2e`) : parcours réel dans un navigateur — saisie,
   rendu du `<canvas>`, téléchargement, bascule de thème.
 
@@ -169,6 +217,9 @@ Le déploiement est **automatisé** par `.github/workflows/deploy.yml`.
 
 > 💡 `vite.config.ts` utilise `base: './'` : les chemins des assets sont **relatifs**, donc
 > le site fonctionne quel que soit le nom du dépôt — pas besoin de configurer le sous-chemin.
+
+> 🎨 Pour publier avec un autre thème, définissez `VITE_THEME` à l'étape de build du
+> workflow (ex. `env: { VITE_THEME: aurora }` sur le step `npm run build`).
 
 ---
 

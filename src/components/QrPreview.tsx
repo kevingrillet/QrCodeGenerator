@@ -1,14 +1,24 @@
 /**
- * Aperçu du QR code + boutons de téléchargement (PNG / SVG).
+ * Aperçu du QR + téléchargements (PNG / SVG / copie presse-papier).
  *
- * Le QR est dessiné dans un <canvas> via l'adaptateur `lib/qr`. Tant que le
- * formulaire n'est pas exploitable (`ready === false`), on affiche un message
- * d'invite plutôt qu'un QR vide. Par défaut le QR est rendu en noir sur blanc
- * (meilleur contraste, lisibilité optimale par les scanners) mais l'utilisateur
- * peut personnaliser la couleur des modules et celle du fond via deux color pickers.
+ * L'aperçu est rendu en <canvas> par `qr-code-styling` (clic droit « Copier
+ * l'image » disponible). Le conteneur reste monté en permanence — masqué tant que
+ * le formulaire n'est pas exploitable (`ready === false`) — pour conserver
+ * l'instance et son canvas. Un avertissement s'affiche si les couleurs choisies
+ * compromettent la lisibilité (voir `contrast.ts`). Les réglages (correction,
+ * densité, taille) vivent dans `QrOutputControls` (colonne de gauche).
  */
 import { useEffect, useRef, useState } from 'react';
-import { downloadPng, downloadSvg, renderToCanvas } from '../lib/qr';
+import QRCodeStyling from 'qr-code-styling';
+import {
+  createQr,
+  downloadQr,
+  toStylingOptions,
+  type ErrorCorrectionLevel,
+  type ModuleShape,
+  type QrColors,
+} from '../lib/qr';
+import { contrastStatus } from '../lib/contrast';
 import { useI18n } from '../i18n/I18nProvider';
 
 export interface QrPreviewProps {
@@ -18,94 +28,151 @@ export interface QrPreviewProps {
   ready: boolean;
   /** Préfixe du nom de fichier au téléchargement. */
   filenameBase?: string;
+  /** Couleurs (modules / fond). */
+  colors: QrColors;
+  /** Forme des modules. */
+  shape: ModuleShape;
+  /** Niveau de correction d'erreur. */
+  ecLevel: ErrorCorrectionLevel;
+  /** Densité : 0 = automatique, 1–40 = version forcée. */
+  density: number;
+  /** Taille d'export en pixels. */
+  size: number;
+  /** Logo (data URL) à incruster au centre, ou chaîne vide. */
+  image?: string;
 }
 
-const QR_WIDTH = 256;
-const DEFAULT_DARK = '#000000';
-const DEFAULT_LIGHT = '#ffffff';
+const PREVIEW_WIDTH = 240;
 
-export function QrPreview({ text, ready, filenameBase = 'qrcode' }: QrPreviewProps) {
+export function QrPreview({
+  text,
+  ready,
+  filenameBase = 'qrcode',
+  colors,
+  shape,
+  ecLevel,
+  density,
+  size,
+  image,
+}: QrPreviewProps) {
   const { t } = useI18n();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [dark, setDark] = useState(DEFAULT_DARK);
-  const [light, setLight] = useState(DEFAULT_LIGHT);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const qrRef = useRef<QRCodeStyling | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [encodeError, setEncodeError] = useState(false);
 
-  const colors = { dark, light };
+  const { dark, light } = colors;
+  const contrast = contrastStatus(dark, light);
+  const contrastWarning =
+    contrast === 'low'
+      ? t('preview.contrastWarningLow')
+      : contrast === 'inverted'
+        ? t('preview.contrastWarningInverted')
+        : null;
 
+  const renderOptions = {
+    colors: { dark, light },
+    shape,
+    errorCorrectionLevel: ecLevel,
+    typeNumber: density,
+    image: image || undefined,
+  };
+
+  // (Re)dessine l'aperçu lorsque le contenu ou le style change. Une densité forcée
+  // trop basse pour les données fait échouer l'encodage : on le signale.
   useEffect(() => {
-    if (!ready || !canvasRef.current) return;
-    let cancelled = false;
-    renderToCanvas(canvasRef.current, text, { width: QR_WIDTH, colors })
-      .then(() => {
-        if (!cancelled) setError(null);
-      })
-      .catch(() => {
-        if (!cancelled) setError(t('preview.error'));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [text, ready, t, dark, light]);
+    if (!ready || !containerRef.current) return;
+    try {
+      const options = { ...renderOptions, width: PREVIEW_WIDTH };
+      if (!qrRef.current) {
+        qrRef.current = createQr(text, options);
+        qrRef.current.append(containerRef.current);
+      } else {
+        qrRef.current.update(toStylingOptions(text, options));
+      }
+      // On doit enregistrer le résultat de l'encodage (échec si la densité forcée
+      // est trop basse pour les données) — il n'est connu qu'après le rendu canvas.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEncodeError(false);
+    } catch {
+      setEncodeError(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, ready, dark, light, shape, ecLevel, density, image]);
+
+  const handleCopy = () => {
+    const canvas = containerRef.current?.querySelector('canvas');
+    if (!canvas) return;
+    canvas.toBlob((blob) => {
+      if (!blob || !navigator.clipboard?.write) return;
+      void navigator.clipboard
+        .write([new ClipboardItem({ 'image/png': blob })])
+        .then(() => {
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1500);
+        })
+        .catch(() => {
+          /* presse-papier indisponible : on ignore silencieusement. */
+        });
+    });
+  };
+
+  const canExport = ready && !encodeError;
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="flex h-[256px] w-[256px] items-center justify-center rounded-xl border border-gray-200 bg-white p-2 dark:border-gray-700">
-        {ready ? (
-          <canvas
-            ref={canvasRef}
-            width={QR_WIDTH}
-            height={QR_WIDTH}
-            role="img"
-            aria-label={t('preview.alt')}
-            data-testid="qr-canvas"
-          />
-        ) : (
-          <p className="px-4 text-center text-sm text-gray-400">{t('preview.prompt')}</p>
+      <div className="flex h-[256px] w-[256px] items-center justify-center rounded-card border bg-surface p-2">
+        <div
+          ref={containerRef}
+          data-testid="qr-canvas"
+          className={ready && !encodeError ? '' : 'hidden'}
+        />
+        {!ready && <p className="px-4 text-center text-sm text-fg-muted">{t('preview.prompt')}</p>}
+        {ready && encodeError && (
+          <p className="px-4 text-center text-sm text-red-500">{t('preview.error')}</p>
         )}
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {contrastWarning && (
+        <p role="alert" className="max-w-[256px] text-center text-sm text-amber-500">
+          {contrastWarning}
+        </p>
+      )}
 
-      <div className="flex gap-6">
-        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-          <input
-            type="color"
-            value={dark}
-            onChange={(e) => setDark(e.target.value)}
-            aria-label={t('preview.foregroundColor')}
-            className="h-8 w-8 cursor-pointer rounded border border-gray-300 bg-transparent dark:border-gray-600"
-          />
-          {t('preview.foregroundColor')}
-        </label>
-        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-          <input
-            type="color"
-            value={light}
-            onChange={(e) => setLight(e.target.value)}
-            aria-label={t('preview.backgroundColor')}
-            className="h-8 w-8 cursor-pointer rounded border border-gray-300 bg-transparent dark:border-gray-600"
-          />
-          {t('preview.backgroundColor')}
-        </label>
-      </div>
+      {/* Lisibilité (statut de contraste) */}
+      <p className="text-xs text-fg-muted">
+        {contrast === 'ok' ? t('preview.readabilityOk') : t('preview.readabilityRisk')}
+      </p>
 
-      <div className="flex gap-2">
+      {/* Téléchargements */}
+      <div className="grid w-full max-w-[256px] grid-cols-2 gap-2">
         <button
           type="button"
-          disabled={!ready}
-          onClick={() => downloadPng(text, `${filenameBase}.png`, { width: 1024, colors })}
-          className="min-w-[9rem] rounded-lg bg-indigo-600 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={!canExport}
+          onClick={() =>
+            downloadQr(text, `${filenameBase}`, 'png', { ...renderOptions, width: size })
+          }
+          className="col-span-2 rounded-control bg-accent px-4 py-2 text-center text-sm font-medium text-accent-fg shadow-btn transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           {t('preview.downloadPng')}
         </button>
         <button
           type="button"
-          disabled={!ready}
-          onClick={() => downloadSvg(text, `${filenameBase}.svg`, { colors })}
-          className="min-w-[9rem] rounded-lg border border-indigo-600 px-4 py-2 text-center text-sm font-medium text-indigo-600 transition hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-gray-800"
+          disabled={!canExport}
+          onClick={() =>
+            downloadQr(text, `${filenameBase}`, 'svg', { ...renderOptions, width: size })
+          }
+          className="rounded-control border border-accent-strong px-4 py-2 text-center text-sm font-medium text-accent-strong transition hover:bg-accent-soft disabled:cursor-not-allowed disabled:opacity-40"
         >
           {t('preview.downloadSvg')}
+        </button>
+        <button
+          type="button"
+          disabled={!canExport}
+          onClick={handleCopy}
+          className="rounded-control border px-4 py-2 text-center text-sm font-medium text-fg transition hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {copied ? t('preview.copied') : t('preview.copy')}
         </button>
       </div>
     </div>

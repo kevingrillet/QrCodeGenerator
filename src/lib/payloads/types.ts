@@ -14,15 +14,7 @@
 
 /** Types de champ supportés par le formulaire dynamique. */
 export type FieldType =
-  | 'text'
-  | 'textarea'
-  | 'password'
-  | 'tel'
-  | 'email'
-  | 'url'
-  | 'number'
-  | 'checkbox'
-  | 'select';
+  'text' | 'textarea' | 'password' | 'tel' | 'email' | 'url' | 'number' | 'checkbox' | 'select';
 
 /** Option d'un champ de type `select`. */
 export interface FieldOption {

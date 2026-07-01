@@ -1,7 +1,7 @@
 {
   "name": "qrcode-generator",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.1.1",
   "type": "module",
   "description": "Petit site statique pour générer des QR codes (texte, URL, WiFi, email, SMS, téléphone, vCard, géo).",
   "license": "GPL-3.0-or-later",

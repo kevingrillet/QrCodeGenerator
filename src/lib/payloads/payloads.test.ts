@@ -140,6 +140,54 @@ describe('buildGeo', () => {
   });
 });
 
+describe('caractères non-ASCII / Unicode / emoji', () => {
+  it('vCard : préserve les caractères accentués et emoji, échappe les réservés', () => {
+    const vcard = buildVCard({
+      firstName: 'José',
+      lastName: 'Muñoz 🎉',
+      organization: 'Café; Résto',
+      title: '',
+      phone: '',
+      email: 'josé@exémple.fr',
+      url: '',
+    });
+    // Unicode préservé tel quel…
+    expect(vcard).toContain('N:Muñoz 🎉;José;;;');
+    expect(vcard).toContain('FN:José Muñoz 🎉');
+    expect(vcard).toContain('EMAIL:josé@exémple.fr');
+    // …et le `;` de l'organisation est bien échappé (RFC 6350).
+    expect(vcard).toContain('ORG:Café\\; Résto');
+  });
+
+  it('URL : accepte et normalise un domaine internationalisé (IDN)', () => {
+    expect(buildUrl('café.fr')).toBe('https://café.fr');
+    // La validation s'appuie sur `new URL()` (punycode) : l'IDN est considéré valide.
+    expect(getErrors(getPayloadType('url'), { url: 'café.fr' })).toEqual({});
+    expect(getErrors(getPayloadType('url'), { url: 'münchen.de/straße' })).toEqual({});
+  });
+
+  it('WiFi : échappe les réservés tout en préservant emoji et accents du SSID', () => {
+    expect(
+      buildWifi({ ssid: '📶Réseau;Maison', password: 'p,w', encryption: 'WPA', hidden: false }),
+    ).toBe('WIFI:T:WPA;S:📶Réseau\\;Maison;P:p\\,w;;');
+  });
+
+  it('SMS : laisse passer emoji et accents dans le message', () => {
+    expect(buildSms({ number: '+33612345678', message: 'Salut 👋 ça va ?' })).toBe(
+      'SMSTO:+33612345678:Salut 👋 ça va ?',
+    );
+  });
+
+  it('Email : encode espaces, accents et emoji du sujet/corps (RFC 6068)', () => {
+    const out = buildEmail({ to: 'a@b.com', subject: 'Bonjour 👋', body: 'Été à Paris' });
+    expect(out.startsWith('mailto:a@b.com?')).toBe(true);
+    expect(out).toContain(`subject=${encodeURIComponent('Bonjour 👋')}`);
+    expect(out).toContain(`body=${encodeURIComponent('Été à Paris')}`);
+    // Pas d'espace brut ni de caractère non encodé dans la query.
+    expect(out).not.toMatch(/\s/);
+  });
+});
+
 describe('registre', () => {
   it('expose tous les types attendus', () => {
     const ids = PAYLOAD_TYPES.map((t) => t.id);
@@ -196,8 +244,26 @@ describe('registre', () => {
       it('accepte une adresse valide', () => {
         expect(getErrors(email, { to: 'a@b.com' })).toEqual({});
       });
+      it('accepte une extension courte mais ≥ 2 caractères', () => {
+        expect(getErrors(email, { to: 'nom@exemple.co' })).toEqual({});
+      });
+      it('accepte un sous-domaine', () => {
+        expect(getErrors(email, { to: 'nom@mail.exemple.com' })).toEqual({});
+      });
       it('rejette une adresse sans domaine', () => {
         expect(getErrors(email, { to: 'a@b' })).toEqual({ to: 'validation.email' });
+      });
+      it('rejette un TLD d’un seul caractère (ex. x@x.x, trop permissif auparavant)', () => {
+        expect(getErrors(email, { to: 'x@x.x' })).toEqual({ to: 'validation.email' });
+      });
+      it('rejette un point doublé dans le domaine', () => {
+        expect(getErrors(email, { to: 'a@b..com' })).toEqual({ to: 'validation.email' });
+      });
+      it('rejette une adresse avec espace', () => {
+        expect(getErrors(email, { to: 'a b@exemple.com' })).toEqual({ to: 'validation.email' });
+      });
+      it('accepte un domaine internationalisé (IDN, non-ASCII)', () => {
+        expect(getErrors(email, { to: 'contact@exémple.fr' })).toEqual({});
       });
     });
 

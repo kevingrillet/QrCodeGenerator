@@ -29,8 +29,16 @@ import { buildGeo } from './geo';
 /* Convention : un champ vide ne produit jamais d'erreur (géré par `isReady`). */
 /* -------------------------------------------------------------------------- */
 
-/** Format email volontairement permissif : `qqch@qqch.tld`. */
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/**
+ * Format email : validation PRAGMATIQUE (pas un RFC 5322 complet, hors de portée
+ * d'une regex raisonnable). On exige une partie locale non vide, un domaine formé
+ * d'au moins deux étiquettes non vides séparées par des points, et une extension
+ * (TLD) d'au moins 2 caractères — ce qui écarte les cas manifestement invalides
+ * comme `x@x.x` ou `a@b`. Les caractères non-ASCII (domaines/IDN, partie locale
+ * internationale) restent acceptés : on ne veut pas exclure les adresses valides
+ * à l'international, seulement rattraper les fautes de frappe grossières.
+ */
+const EMAIL_REGEX = /^[^\s@]+@(?:[^\s@.]+\.)+[^\s@.]{2,}$/u;
 
 /** Vérifie qu'une chaîne est un nombre fini compris dans [min, max]. */
 function isNumberInRange(raw: string, min: number, max: number): boolean {

@@ -5,6 +5,52 @@ Toutes les évolutions notables de ce projet sont consignées dans ce fichier.
 Le format s'inspire de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et le projet suit le [versionnage sémantique](https://semver.org/lang/fr/).
 
+## [2.2.0] — 2026-07-02
+
+Renforcement de la qualité et de la robustesse : couverture de tests mesurée en
+CI, audits d'accessibilité (unitaires et automatisés) et de performance web,
+garde-fous de saisie, et validation e-mail durcie. Alignement des patterns
+transverses sur le socle NodeTemplate.
+
+### Ajouté
+
+- **Couverture de tests en CI** : `npm run test:cov` (reporters `text` /
+  `text-summary` / `json-summary` / `lcov`) avec **seuils** (`vite.config.ts` :
+  lignes/instructions/fonctions 80 %, branches 75 %). La CI publie un **résumé de
+  couverture** et un **artefact** `coverage/`.
+- **Tests d'accessibilité unitaires** (`*.a11y.test.tsx` + helper partagé
+  `src/test/a11y.tsx`) pour `Section`, `ThemeToggle`, `LanguageSwitcher` et
+  `ThemeSelector` : rôles / noms accessibles, ARIA d'état, classe `dark` /
+  `data-theme`, persistance `localStorage` et navigation clavier.
+- **Accessibilité automatisée e2e** : intégration d'**axe-core**
+  (`@axe-core/playwright`) au smoke Playwright — échec sur les violations WCAG 2.x
+  A/AA `serious`/`critical` (clair **et** sombre, aperçu QR inclus).
+- **Lighthouse CI** : `@lhci/cli` + `lighthouserc.json` (accessibilité **bloquante**
+  ≥ 0.9, performance / best-practices / SEO en avertissement) et workflow
+  `.github/workflows/lighthouse.yml`.
+- **Tests unitaires de `QrPreview`** (jusque-là non testé) en **mockant
+  `qr-code-styling`** : rendu réussi, échec d'encodage (message affiché), copie
+  presse-papier (API Clipboard **et** repli « clic droit »), export PNG.
+- **Garde-fous de saisie** (module pur `src/lib/limits.ts`, testé) :
+  - **longueur du contenu** — au-delà de la capacité d'un QR (fonction du niveau de
+    correction), un message i18n clair remplace l'erreur brute du moteur ;
+  - **poids du logo importé** — au-delà de 1 Mo, l'import est refusé avec un message
+    explicite au lieu d'alourdir le QR.
+- **Guide d'extension** « Ajouter un type de QR » (pas à pas) dans `AGENTS.md`.
+- **Cas de tests Unicode / emoji** pour les builders (vCard, URL/IDN, WiFi, SMS,
+  Email) : préservation des caractères non-ASCII et échappements corrects.
+
+### Modifié
+
+- **Validation e-mail durcie** : la regex acceptait `x@x.x`. Elle exige désormais un
+  domaine d'au moins deux étiquettes non vides et une extension ≥ 2 caractères
+  (choix **pragmatique**, non RFC 5322 complet ; les domaines internationalisés /
+  IDN restent acceptés). Tests ajoutés.
+
+### Dépendances
+
+- Ajout des dépendances de développement `@axe-core/playwright` et `@lhci/cli`.
+
 ## [2.1.1] — 2026-07-01
 
 Version d'outillage et de documentation : hooks Git versionnés, normalisation des

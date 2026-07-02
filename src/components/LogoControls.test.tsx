@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LogoControls } from './LogoControls';
+import { MAX_LOGO_BYTES } from '../lib/limits';
 
 describe('LogoControls', () => {
   it('lit le fichier importé en data URL et le remonte', async () => {
@@ -12,6 +13,18 @@ describe('LogoControls', () => {
     await userEvent.upload(input, file);
     await waitFor(() => expect(onChange).toHaveBeenCalled());
     expect(onChange.mock.calls[0][0]).toMatch(/^data:/);
+  });
+
+  it('refuse un fichier trop volumineux et ne remonte rien', async () => {
+    const onChange = vi.fn();
+    render(<LogoControls logo="" onChange={onChange} />);
+    const input = screen.getByLabelText('Importer une image');
+    const file = new File(['x'], 'huge.png', { type: 'image/png' });
+    // On force une taille au-dessus du seuil sans allouer un vrai gros fichier.
+    Object.defineProperty(file, 'size', { value: MAX_LOGO_BYTES + 1 });
+    await userEvent.upload(input, file);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/trop volumineuse/i);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('affiche un aperçu et permet de retirer le logo', async () => {

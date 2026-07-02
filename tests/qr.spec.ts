@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 
 /**
  * Tests d'intégration end-to-end (navigateur réel via Playwright).
@@ -6,6 +7,22 @@ import { test, expect, type Page } from '@playwright/test';
  * téléchargement. Le serveur de prévisualisation est lancé automatiquement
  * (voir playwright.config.ts).
  */
+
+/**
+ * Accessibilité automatisée (axe-core) — PATTERN RÉUTILISABLE.
+ *
+ * On scanne la page avec les jeux de règles WCAG 2.x A + AA et on n'échoue que
+ * sur les violations `serious` / `critical` : ce seuil attrape les vrais blocages
+ * (contraste, nom accessible, ARIA cassé) sans transformer chaque avertissement
+ * mineur en test rouge. `analyze()` renvoie toutes les violations ; on filtre par
+ * `impact`. Pour un nouveau projet : dupliquer ce test, adapter le `goto`.
+ */
+async function scanSeriousA11yViolations(page: Page) {
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+  return results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+}
 
 /**
  * Le QR est dessiné de façon ASYNCHRONE par `qr-code-styling` : il ajoute un
@@ -69,5 +86,23 @@ test.describe('Générateur de QR code', () => {
     await page.getByRole('button', { name: 'Passer en anglais' }).click();
     await expect(page.getByRole('heading', { name: 'QR code generator' })).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  });
+
+  test("n'a pas de violation a11y sérieuse/critique (clair)", async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: 'Générateur de QR code' })).toBeVisible();
+    // On génère un QR pour scanner aussi l'aperçu (rôle img + nom accessible).
+    await page.getByRole('textbox', { name: 'Texte' }).fill('Bonjour a11y');
+    await expect(renderedQr(page)).toBeVisible();
+    expect(await scanSeriousA11yViolations(page)).toEqual([]);
+  });
+
+  test("n'a pas de violation a11y sérieuse/critique (sombre)", async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: /activer le mode/i }).click();
+    await expect(page.locator('html')).toHaveClass(/dark/);
+    await page.getByRole('textbox', { name: 'Texte' }).fill('Bonjour a11y');
+    await expect(renderedQr(page)).toBeVisible();
+    expect(await scanSeriousA11yViolations(page)).toEqual([]);
   });
 });
